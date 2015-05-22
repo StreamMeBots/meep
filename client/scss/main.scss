@@ -1,3 +1,5 @@
+$meepRed: #D64541;
+
 html {
 	color: #222;
 	font-size: 1em;
@@ -48,7 +50,7 @@ textarea {
 
 header {
 	background: #201F1F;
-	border-bottom: solid 2px #D64541;
+	border-bottom: solid 2px $meepRed;
 	display: block;
 	height: 7.2em;
 
@@ -78,8 +80,25 @@ header {
 	}
 }
 
+nav {
+	float: right;
+	margin: 1em;
+}
+nav ul {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+nav ul li {
+	float: left;
+}
+nav ul li a {
+	text-decoration: none;
+	color: #eee;
+}
+
 .meep-red, a.meep-red {
-	color: #D64541;
+	color: $meepRed;
 }
 
 .jumbotron {
@@ -134,7 +153,7 @@ header {
 	font-size: 1em;
 	cursor: pointer;
 	line-height: 1.2;
-	background-color: #D64541;
+	background-color: $meepRed;
 	padding: 1em;
 	color: #fafafa;
 	text-decoration: none;
@@ -142,4 +161,34 @@ header {
 
 .content {
 	margin: 2em;
+	p {
+		margin: 1em;
+	}
+}
+
+.card {
+	padding: 1em;
+	background-color: #fafafa;
+	border: 1px solid #ddd;
+	margin: 1em;
+
+	h1 {
+		margin: 1em 0;
+		font-size: 1.5em;
+		font-weight: 300;
+		color: $meepRed;
+	}
+	.actions {
+		margin: 1em 0 0;
+	}
+}
+
+.error {
+	&:before {
+		content: "meep! an error!";
+		background-color: $meepRed;
+		color: #fafafa;
+		padding: .4em;
+		margin-right: .4em;
+	}
 }

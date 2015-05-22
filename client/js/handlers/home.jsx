@@ -1,6 +1,7 @@
 var React = require('react'),
 	helpers = require('./helpers'),
-	user = require('../user');
+	user = require('../user'),
+	Bot = require('../components/bot.jsx');
 
 module.exports = function(ctx) {
 	var avatarStyle = {
@@ -9,7 +10,8 @@ module.exports = function(ctx) {
 
 	React.render(
 		<section className='content'>
-			Welcome <span style={avatarStyle} className='tinyAvatar' />{ user.get('username') }!
+			<p>Welcome <span style={avatarStyle} className='tinyAvatar' />{ user.get('username') }!</p>
+			<Bot />
 		</section>,
 		helpers.getPageDiv()
 	);

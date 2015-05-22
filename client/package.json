@@ -16,6 +16,7 @@
   "dependencies": {
     "cookie": "^0.1.3",
     "lodash": "^3.9.1",
+    "moment": "^2.10.3",
     "page": "^1.6.3",
     "react": "^0.13.3",
     "reactify": "^1.1.1",

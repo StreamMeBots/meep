@@ -11,9 +11,15 @@ var pagechange = function(newPage) {
 	};
 }
 
-header(document.getElementsByTagName('header')[0]);
 authentication(
 	document.getElementsByTagName('menu')[0], function() {
+
+	header(document.getElementsByTagName('header')[0]);
+
+	page('/logout', function(){
+		document.cookie = 'sessid=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+		window.location = '/';
+	});
 
 	if(user.isAuthenticated()) {
 		page('/', pagechange('landing'), require('./handlers/home.jsx'));	
