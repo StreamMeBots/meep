@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	// setup loggger
+	// setup logger
 	log.SetPrefix("[BOT] ")
 
 	// parse command line flags

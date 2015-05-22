@@ -235,19 +235,17 @@ func createCommand(ctx *gin.Context) {
 }
 
 func getCommands(ctx *gin.Context) {
-	/*
-		u := getAuthedUser(ctx)
+	u := getAuthedUser(ctx)
 
-		cmds, err := command.GetAll(user.BucketName(u.user.PublicId))
-		if err != nil {
-			ctx.JSON(500, map[string]string{
-				"message": "Internal server error",
-			})
-			return
-		}
+	cmds, err := command.GetAll(user.BucketName(u.user.PublicId))
+	if err != nil {
+		ctx.JSON(500, map[string]string{
+			"message": "Internal server error",
+		})
+		return
+	}
 
-		ctx.JSON(200, cmds)
-	*/
+	ctx.JSON(200, cmds)
 }
 
 func getCommand(ctx *gin.Context) {
@@ -266,6 +264,17 @@ func getCommand(ctx *gin.Context) {
 }
 
 func deleteCommand(ctx *gin.Context) {
-	//u := getAuthedUser(ctx)
+	u := getAuthedUser(ctx)
 
+	err := commands.Delete(user.BucketName(u.user.PublicId), ctx.ParamValue("name"))
+	if err != nil {
+		ctx.JSON(500, map[string]string{
+			"message": "Internal server error",
+		})
+		return
+	}
+
+	ctx.JSON(200, map[string]string{
+		"message": "Command has been deleted",
+	})
 }
