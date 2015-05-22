@@ -1,10 +1,11 @@
 var React = require('react'),
-	helpers = require('./helpers'),
-	Landing = require('../components/landing.jsx');
+	helpers = require('./helpers');
 
 module.exports = function(ctx) {
 	React.render(
-		<Landing />,
+		<section className='content'>
+			sup yo!
+		</section>,
 		helpers.getPageDiv()
 	);
 }

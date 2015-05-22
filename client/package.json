@@ -9,15 +9,16 @@
   "scripts": {
     "scss": "rm serve/build/style.css ; node-sass scss/main.scss serve/build/style.css",
     "js": "rm serve/build/main.js ; browserify -t reactify ./js/main.js -o serve/build/main.js",
-    "build": "rm -rf serve/build ; mkdir serve/build ; node-sass scss/main.scss serve/build/style.css; browserify -t reactify ./js/main.js -o serve/build/main.js"
+    "build": "npm install ; rm -rf serve/build ; mkdir serve/build ; node-sass scss/main.scss serve/build/style.css; browserify -t reactify ./js/main.js -o serve/build/main.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "cookie-js": "0.0.1",
+    "cookie": "^0.1.3",
     "lodash": "^3.9.1",
     "page": "^1.6.3",
     "react": "^0.13.3",
-    "reactify": "^1.1.1"
+    "reactify": "^1.1.1",
+    "xhr": "^2.0.1"
   }
 }

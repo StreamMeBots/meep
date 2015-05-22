@@ -1,5 +1,6 @@
 var page = require('page'),
 	pubsub = require('./pubsub'),
+	user = require('./user'),
 	header = require('./handlers/header.jsx'),
 	authentication = require('./handlers/authentication.jsx');
 
@@ -11,8 +12,15 @@ var pagechange = function(newPage) {
 }
 
 header(document.getElementsByTagName('header')[0]);
-authentication();
+authentication(
+	document.getElementsByTagName('menu')[0], function() {
 
-page('/', pagechange('landing'), require('./handlers/landing.jsx'));
-// page('*')
-page();
+	if(user.isAuthenticated()) {
+		page('/', pagechange('landing'), require('./handlers/home.jsx'));	
+	} else {
+		page('/', pagechange('landing'), require('./handlers/landing.jsx'));
+	}
+	
+	// page('*')
+	page();
+});
