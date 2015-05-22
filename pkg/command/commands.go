@@ -69,14 +69,14 @@ func (c *Command) Save(userBucket []byte) error {
 func Get(userBucket []byte, name string) (*Command, error) {
 	var cmd *Command
 	err := db.DB.View(func(tx *bolt.Tx) error {
-		ubkt, err := tx.CreateBucketIfNotExists(userBucket)
-		if err != nil {
-			return err
+		ubkt := tx.Bucket(userBucket)
+		if ubkt == nil {
+			return nil
 		}
 
-		bkt, err := ubkt.CreateBucketIfNotExists(BucketName)
-		if err != nil {
-			return err
+		bkt := ubkt.Bucket(BucketName)
+		if bkt == nil {
+			return nil
 		}
 
 		b := bkt.Get([]byte(name))
@@ -104,14 +104,14 @@ func GetAll(userBucket []byte) ([]*Command, error) {
 	cmds := []*Command{}
 
 	err := db.DB.View(func(tx *bolt.Tx) error {
-		ubkt, err := tx.CreateBucketIfNotExists(userBucket)
-		if err != nil {
-			return err
+		ubkt := tx.Bucket(userBucket)
+		if ubkt == nil {
+			return nil
 		}
 
-		bkt, err := ubkt.CreateBucketIfNotExists(BucketName)
-		if err != nil {
-			return err
+		bkt := ubkt.Bucket(BucketName)
+		if bkt == nil {
+			return nil
 		}
 
 		bkt.ForEach(func(k, v []byte) error {
