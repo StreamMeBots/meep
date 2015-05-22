@@ -2,3 +2,4 @@ bindata_assetfs.go
 bindata.go
 meep
 meep.db
+config.json
