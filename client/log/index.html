@@ -1,0 +1,35 @@
+<script>
+function getLogStream() {
+	if (!window.EventSource) {
+		alert("EventSource is not enabled in this browser. How about you use chrome.");
+		return;
+	}
+	var source = new EventSource('/api/bot/log-stream');
+	source.addEventListener('stateChange', log, false)
+	source.addEventListener('read', log, false)
+	source.addEventListener('readError', log, false)
+	source.addEventListener('write', log, false)
+	source.addEventListener('writeError', log, false)
+	source.addEventListener('botError', log, false)
+}
+
+function log(e) {
+	console.log(e);
+	append(e.type + ": " + e.data)
+}
+
+function append(text) {
+	var div = document.createElement('div');
+	var text = document.createTextNode(text);
+	div.appendChild(text);
+	document.body.appendChild(div);
+	var hr = document.createElement('hr');
+	document.body.appendChild(hr);
+}
+
+getLogStream();
+
+</script>
+<h1>Bot Log</h1>
+
+Check your dev console :)

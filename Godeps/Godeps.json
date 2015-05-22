@@ -1,0 +1,65 @@
+{
+	"ImportPath": "github.com/StreamMeBots/meep",
+	"GoVersion": "go1.4.2",
+	"Deps": [
+		{
+			"ImportPath": "github.com/StreamMeBots/pkg/bot",
+			"Rev": "ffa2ce360dc784787361d12a9ced3a31b3089b44"
+		},
+		{
+			"ImportPath": "github.com/StreamMeBots/pkg/commands",
+			"Rev": "ffa2ce360dc784787361d12a9ced3a31b3089b44"
+		},
+		{
+			"ImportPath": "github.com/StreamMeBots/pkg/parser",
+			"Rev": "ffa2ce360dc784787361d12a9ced3a31b3089b44"
+		},
+		{
+			"ImportPath": "github.com/StreamMeBots/pkg/tcpclient",
+			"Rev": "ffa2ce360dc784787361d12a9ced3a31b3089b44"
+		},
+		{
+			"ImportPath": "github.com/boltdb/bolt",
+			"Comment": "v1.0-98-gafceb31",
+			"Rev": "afceb316b96ea97cbac6d23afbdf69543d80748a"
+		},
+		{
+			"ImportPath": "github.com/elazarl/go-bindata-assetfs",
+			"Rev": "fe5a90c9bd2990734f4928be5d3aeebb00f61f70"
+		},
+		{
+			"ImportPath": "github.com/gin-gonic/contrib/static",
+			"Rev": "8cd6643cdcdfe5c50973a8e5a11934f7315d58d6"
+		},
+		{
+			"ImportPath": "github.com/gin-gonic/gin",
+			"Comment": "v0.4-259-g880dd7f",
+			"Rev": "880dd7f3cf0723658825722a0d13d8d5a7badaac"
+		},
+		{
+			"ImportPath": "github.com/jinzhu/now",
+			"Rev": "664da28e00d9ee7e15a5cd6c38c1a4434f0d8e1a"
+		},
+		{
+			"ImportPath": "github.com/manucorporat/sse",
+			"Rev": "c574f6c50c8594f93d28b03a1bbd87b4a3899093"
+		},
+		{
+			"ImportPath": "github.com/mattn/go-colorable",
+			"Rev": "d67e0b7d1797975196499f79bcc322c08b9f218b"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "7212a0803472eb1ec2686896a7c626528172a7a6"
+		},
+		{
+			"ImportPath": "golang.org/x/oauth2",
+			"Rev": "f98d0160877ab4712b906626425ed8b0b320907c"
+		},
+		{
+			"ImportPath": "gopkg.in/joeybloggs/go-validate-yourself.v4",
+			"Comment": "v4.0.4",
+			"Rev": "47a6634ff80051b92481b6c076854b85119fd267"
+		}
+	]
+}
