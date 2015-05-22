@@ -73,7 +73,7 @@ func Init(r *gin.Engine) {
 		api.GET("/commands", getCommands)
 
 		// update commands list
-		api.PUT("/commands", updateCommand)
+		api.PUT("/commands", createCommand)
 
 		// get a single
 		api.GET("/commands/:name", getCommand)
@@ -205,10 +205,56 @@ func saveGreetings(ctx *gin.Context) {
 	ctx.JSON(200, tmpl)
 }
 
-func getCommands(ctx *gin.Context) {
+func createCommand(ctx *gin.Context) {
 	u := getAuthedUser(ctx)
 
-	cmds, err := command.GetAll(user.BucketName(u.user.PublicId))
+	c := &command.Command{}
+	if err := json.NewDecoder(ctx.Request.Body).Decode(&c); err != nil {
+		log.Printf("msg='json-decode-error', error='%v'\n", err)
+		ctx.JSON(400, map[string]string{
+			"message": "Invalid JSON body",
+		})
+		return
+	}
+
+	if err := c.Validate(); err != nil {
+		ctx.JSON(422, map[string]string{
+			"message": err.Error(),
+		})
+		return
+	}
+
+	if err := c.Save(user.BucketName(u.user.PublicId)); err != nil {
+		ctx.JSON(500, map[string]string{
+			"message": "Internal server error",
+		})
+		return
+	}
+
+	ctx.JSON(200, c)
+}
+
+func getCommands(ctx *gin.Context) {
+	/*
+		u := getAuthedUser(ctx)
+
+		cmds, err := command.GetAll(user.BucketName(u.user.PublicId))
+		if err != nil {
+			ctx.JSON(500, map[string]string{
+				"message": "Internal server error",
+			})
+			return
+		}
+
+		ctx.JSON(200, cmds)
+	*/
+}
+
+func getCommand(ctx *gin.Context) {
+	//u := getAuthedUser(ctx)
+	u := getAuthedUser(ctx)
+
+	cmd, err := command.Get(user.BucketName(u.user.PublicId), ctx.ParamValue("name"))
 	if err != nil {
 		ctx.JSON(500, map[string]string{
 			"message": "Internal server error",
@@ -216,17 +262,7 @@ func getCommands(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(200, cmds)
-}
-
-func getCommand(ctx *gin.Context) {
-	//u := getAuthedUser(ctx)
-
-}
-
-func updateCommand(ctx *gin.Context) {
-	//u := getAuthedUser(ctx)
-
+	ctx.JSON(200, cmd)
 }
 
 func deleteCommand(ctx *gin.Context) {
