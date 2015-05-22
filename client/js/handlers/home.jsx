@@ -1,10 +1,15 @@
 var React = require('react'),
-	helpers = require('./helpers');
+	helpers = require('./helpers'),
+	user = require('../user');
 
 module.exports = function(ctx) {
+	var avatarStyle = {
+		background: 'url(' + user.get('avatar') + ')'
+	};
+
 	React.render(
 		<section className='content'>
-			sup yo!
+			Welcome <span style={avatarStyle} className='tinyAvatar' />{ user.get('username') }!
 		</section>,
 		helpers.getPageDiv()
 	);

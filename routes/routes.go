@@ -8,7 +8,7 @@ import (
 
 	"github.com/StreamMeBots/meep/pkg/bot"
 
-	"github.com/StreamMeBots/meep/pkg/command"
+	// "github.com/StreamMeBots/meep/pkg/command"
 	"github.com/StreamMeBots/meep/pkg/config"
 	"github.com/StreamMeBots/meep/pkg/greetings"
 	"github.com/StreamMeBots/meep/pkg/user"
@@ -68,18 +68,20 @@ func Init(r *gin.Engine) {
 		// bot log
 		api.GET("/bot/log-stream", logStream)
 
-		// Commands
-		// get commands
-		api.GET("/commands", getCommands)
+		/*
+			// Commands
+			// get commands
+			api.GET("/commands", getCommands)
 
-		// update commands list
-		api.PUT("/commands", updateCommand)
+			// update commands list
+			api.PUT("/commands", updateCommand)
 
-		// get a single
-		api.GET("/commands/:name", getCommand)
+			// get a single
+			api.GET("/commands/:name", getCommand)
 
-		// remove a command from the commands list
-		api.DELETE("/commands/:name", deleteCommand)
+			// remove a command from the commands list
+			api.DELETE("/commands/:name", deleteCommand)
+		*/
 	}
 }
 
@@ -205,6 +207,7 @@ func saveGreetings(ctx *gin.Context) {
 	ctx.JSON(200, tmpl)
 }
 
+/*
 func getCommands(ctx *gin.Context) {
 	u := getAuthedUser(ctx)
 
@@ -233,3 +236,4 @@ func deleteCommand(ctx *gin.Context) {
 	//u := getAuthedUser(ctx)
 
 }
+*/

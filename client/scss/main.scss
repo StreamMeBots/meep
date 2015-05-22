@@ -49,6 +49,9 @@ textarea {
 header {
 	background: #201F1F;
 	border-bottom: solid 2px #D64541;
+	display: block;
+	height: 7.2em;
+
 	h1 {
 		font-size: 2.4em;
 		font-weight: 300;
@@ -57,6 +60,20 @@ header {
 
 		a {
 			text-decoration: none;
+		}
+
+		.logo {
+			float: left;
+			width: 2em;
+			height: 2em;
+			border-radius: 1em;
+			background: url('/assets/images/logo.png');
+			background-repeat: no-repeat;
+			background-size: cover;
+		}
+		.title {
+			line-height: 1.9;
+			margin: 0 0 0 0.3em;
 		}
 	}
 }

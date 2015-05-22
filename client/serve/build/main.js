@@ -491,7 +491,12 @@ var React = require('react'),
 module.exports = function(el) {
 	React.render(
 		React.createElement("header", null, 
-			React.createElement("h1", null, React.createElement("a", {href: "/", title: "meep", className: "meep-red"}, "!meep"))
+			React.createElement("h1", null, 
+				React.createElement("a", {href: "/", title: "meep", className: "meep-red"}, 
+					React.createElement("span", {className: "logo"}), 
+					React.createElement("span", {className: "title"}, "!meep")
+				)
+			)
 		),
 		el
 	);
@@ -507,19 +512,24 @@ module.exports = {
 
 },{}],8:[function(require,module,exports){
 var React = require('react'),
-	helpers = require('./helpers');
+	helpers = require('./helpers'),
+	user = require('../user');
 
 module.exports = function(ctx) {
+	var avatarStyle = {
+		background: 'url(' + user.get('avatar') + ')'
+	};
+
 	React.render(
 		React.createElement("section", {className: "content"}, 
-			"sup yo!"
+			"Welcome ", React.createElement("span", {style: avatarStyle, className: "tinyAvatar"}),  user.get('username'), "!"
 		),
 		helpers.getPageDiv()
 	);
 }
 
 
-},{"./helpers":7,"react":170}],9:[function(require,module,exports){
+},{"../user":11,"./helpers":7,"react":170}],9:[function(require,module,exports){
 var React = require('react'),
 	helpers = require('./helpers'),
 	Landing = require('../components/landing.jsx');
@@ -553,6 +563,14 @@ User.prototype.isAuthenticated = function() {
 	return this.attributes.authenticated;
 }
 
+User.prototype.get = function(k) {
+	switch(k) {
+		case 'avatar':
+			return this.attributes._links.avatar.href || '';
+		default:
+			return this.attributes[k] || '';
+	}
+}
 
 module.exports = new User();
 
