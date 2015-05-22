@@ -28,6 +28,6 @@ func Assets() *fileSystem {
 	return &fileSystem{&assetfs.AssetFS{
 		Asset:    Asset,
 		AssetDir: AssetDir,
-		Prefix:   "client",
+		Prefix:   "client/serve",
 	}}
 }
