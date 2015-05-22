@@ -7,6 +7,8 @@ import (
 	"net/http"
 
 	"github.com/StreamMeBots/meep/pkg/bot"
+
+	"github.com/StreamMeBots/meep/pkg/command"
 	"github.com/StreamMeBots/meep/pkg/config"
 	"github.com/StreamMeBots/meep/pkg/greetings"
 	"github.com/StreamMeBots/meep/pkg/user"
@@ -82,7 +84,7 @@ func Init(r *gin.Engine) {
 }
 
 func loggedInUser(ctx *gin.Context) {
-	ctx.JSON(200, getAuthedUser(ctx))
+	ctx.JSON(200, getAuthedUser(ctx).user)
 }
 
 func logout(ctx *gin.Context) {
@@ -96,8 +98,7 @@ func logout(ctx *gin.Context) {
 }
 
 func botInfo(ctx *gin.Context) {
-	u := getAuthedUser(ctx)
-	ctx.JSON(200, bots.Info(u.user.PublicId))
+	ctx.JSON(200, bots.Info(getAuthedUser(ctx).user.PublicId))
 }
 
 func logStream(ctx *gin.Context) {
@@ -205,8 +206,17 @@ func saveGreetings(ctx *gin.Context) {
 }
 
 func getCommands(ctx *gin.Context) {
-	//u := getAuthedUser(ctx)
+	u := getAuthedUser(ctx)
 
+	cmds, err := command.GetAll(user.BucketName(u.user.PublicId))
+	if err != nil {
+		ctx.JSON(500, map[string]string{
+			"message": "Internal server error",
+		})
+		return
+	}
+
+	ctx.JSON(200, cmds)
 }
 
 func getCommand(ctx *gin.Context) {
