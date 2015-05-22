@@ -43,6 +43,10 @@ func Init(r *gin.Engine) {
 	// API routes
 	api := r.Group("/api", checkAuth)
 	{
+		// current user info
+		api.GET("/me", loggedInUser)
+
+		// Bot
 		// Start bot
 		api.POST("/bot", startBot)
 
@@ -52,6 +56,7 @@ func Init(r *gin.Engine) {
 		// bot info
 		api.GET("/bot", botInfo)
 
+		// Grettings
 		// get greeting messages
 		api.GET("/greeting-templates", getGreetings)
 
@@ -60,7 +65,24 @@ func Init(r *gin.Engine) {
 
 		// bot log
 		api.GET("/bot/log-stream", logStream)
+
+		// Commands
+		// get commands
+		api.GET("/commands", getCommands)
+
+		// update commands list
+		api.PUT("/commands", updateCommand)
+
+		// get a single
+		api.GET("/commands/:name", getCommand)
+
+		// remove a command from the commands list
+		api.DELETE("/commands/:name", deleteCommand)
 	}
+}
+
+func loggedInUser(ctx *gin.Context) {
+	ctx.JSON(200, getAuthedUser(ctx))
 }
 
 func logout(ctx *gin.Context) {
@@ -180,4 +202,24 @@ func saveGreetings(ctx *gin.Context) {
 	}
 
 	ctx.JSON(200, tmpl)
+}
+
+func getCommands(ctx *gin.Context) {
+	//u := getAuthedUser(ctx)
+
+}
+
+func getCommand(ctx *gin.Context) {
+	//u := getAuthedUser(ctx)
+
+}
+
+func updateCommand(ctx *gin.Context) {
+	//u := getAuthedUser(ctx)
+
+}
+
+func deleteCommand(ctx *gin.Context) {
+	//u := getAuthedUser(ctx)
+
 }

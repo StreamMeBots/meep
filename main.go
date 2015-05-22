@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 
+	"github.com/StreamMeBots/meep/pkg/config"
 	"github.com/StreamMeBots/meep/pkg/db"
 	"github.com/StreamMeBots/meep/routes"
 	"github.com/gin-gonic/contrib/static"
@@ -14,7 +15,11 @@ func main() {
 	// setup loggger
 	log.SetPrefix("[BOT] ")
 
+	// parse command line flags
 	flag.Parse()
+
+	// load from config path?
+	config.CheckConfigPath()
 
 	// Open bolt DB
 	db.Open()

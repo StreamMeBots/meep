@@ -19,6 +19,14 @@ func BucketName(userPublicId string) []byte {
 	return []byte(`user:` + userPublicId)
 }
 
+// Avatar represents a user's avatar
+type Avatar struct {
+	Avatar struct {
+		Href     string `json:"href"`
+		Template string `json:"template"`
+	} `json:"avatar"`
+}
+
 // User represents the fields that belong to a stream.me user
 type User struct {
 	Name       string `json:"displayName"`
@@ -28,7 +36,7 @@ type User struct {
 	Email      string `json:"email"`
 	ChatRoomId string `json:"chatRoomId"`
 	SessId     string `json:"sessId"`
-	Ip         string `json:"ip"`
+	Avatar     Avatar `json:"_links"`
 }
 
 // Get gets a user from stream.me using a pre-authorized http client
@@ -57,7 +65,6 @@ func GetByClient(client *http.Client, userIp string) (*User, error) {
 
 	// create a session ID
 	u.SessId = fmt.Sprintf("%x", sha1.Sum([]byte(u.PublicId+strconv.FormatInt(time.Now().UnixNano(), 10))))
-	u.Ip = userIp
 
 	return u, nil
 }

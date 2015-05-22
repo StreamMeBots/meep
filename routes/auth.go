@@ -130,7 +130,7 @@ func (a *authConfig) redirectHandler(ctx *gin.Context) {
 	// save the user
 	userClients.Add(u.SessId, *u, client)
 
-	fmt.Fprintf(ctx.Writer, "Hello, %s PublicId: %s", u.Name, u.PublicId)
+	ctx.Redirect(302, "/")
 }
 
 // isUserAuthed is a helper function to check if the user is already authenticated
