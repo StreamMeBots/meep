@@ -19,11 +19,12 @@ func BucketName(userPublicId string) []byte {
 	return []byte(`user:` + userPublicId)
 }
 
-// Avatar represents a user's avatar
-type Avatar struct {
+// Links represents a user's links
+type Links struct {
 	Avatar struct {
-		Href     string `json:"href"`
-		Template string `json:"template"`
+		Href           string `json:"href"`
+		Template       string `json:"template,omitemty"`
+		FallbackAvatar string `json:"fallbackAvatar,omitempty"`
 	} `json:"avatar"`
 }
 
@@ -36,7 +37,7 @@ type User struct {
 	Email      string `json:"email"`
 	ChatRoomId string `json:"chatRoomId"`
 	SessId     string `json:"sessId"`
-	Avatar     Avatar `json:"_links"`
+	Links      Links  `json:"_links"`
 }
 
 // Get gets a user from stream.me using a pre-authorized http client
@@ -58,6 +59,11 @@ func GetByClient(client *http.Client, userIp string) (*User, error) {
 
 	if len(u.PublicId) == 0 {
 		return nil, ErrNotFound
+	}
+
+	if len(u.Links.Avatar.Href) == 0 {
+		u.Links.Avatar.Href = u.Links.Avatar.FallbackAvatar
+		u.Links.Avatar.FallbackAvatar = ""
 	}
 
 	// hack until the api provies the user's chat room
