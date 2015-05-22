@@ -266,7 +266,7 @@ func getCommand(ctx *gin.Context) {
 func deleteCommand(ctx *gin.Context) {
 	u := getAuthedUser(ctx)
 
-	err := commands.Delete(user.BucketName(u.user.PublicId), ctx.ParamValue("name"))
+	err := command.Delete(user.BucketName(u.user.PublicId), ctx.ParamValue("name"))
 	if err != nil {
 		ctx.JSON(500, map[string]string{
 			"message": "Internal server error",

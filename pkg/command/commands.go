@@ -100,7 +100,7 @@ func Get(userBucket []byte, name string) (*Command, error) {
 }
 
 // GetAll gets all of a user's commands
-func GetAll(userBucket []byte, name string) ([]*Command, error) {
+func GetAll(userBucket []byte) ([]*Command, error) {
 	cmds := []*Command{}
 
 	err := db.DB.View(func(tx *bolt.Tx) error {
