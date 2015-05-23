@@ -2,6 +2,25 @@ dev: dev-assets
 	godep go build -race -a && \
 		./meep -config-path="$(shell pwd)/config.json"
 
+serve:
+	cd client && npm run-script build
+
+dev: dev-assets serve run
+
+run:
+	godep go build -race -a && ./meep \
+		-bot-key="" \
+		-bot-secret="" \
+		-client-id="" \
+		-client-secret="" \
+		-auth-url http://pds.dev.ifi.tv/api-auth/authorize \
+		-token-url http://pds.dev.ifi.tv/api-auth/token \
+		-server-host localhost \
+		-server-port :8888 \
+		-url http://pds.dev.ifi.tv \
+		-chat-host pds.dev.ifi.tv:2020 \
+		-debug
+
 dev-assets:
 	-rm bindata.go
 	-rm bindata_assetfs.go
