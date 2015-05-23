@@ -147,12 +147,6 @@ func (c *Client) run() error {
 	var conn net.Conn
 	var err error
 
-	defer func() {
-		if conn != nil {
-			conn.Close()
-		}
-	}()
-
 	// write loop
 	go func() {
 		for {

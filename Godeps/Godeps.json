@@ -4,19 +4,19 @@
 	"Deps": [
 		{
 			"ImportPath": "github.com/StreamMeBots/pkg/bot",
-			"Rev": "ffa2ce360dc784787361d12a9ced3a31b3089b44"
+			"Rev": "38a7383f0804a963bb2e47e4e642b8ce886a4ea7"
 		},
 		{
 			"ImportPath": "github.com/StreamMeBots/pkg/commands",
-			"Rev": "ffa2ce360dc784787361d12a9ced3a31b3089b44"
+			"Rev": "38a7383f0804a963bb2e47e4e642b8ce886a4ea7"
 		},
 		{
 			"ImportPath": "github.com/StreamMeBots/pkg/parser",
-			"Rev": "ffa2ce360dc784787361d12a9ced3a31b3089b44"
+			"Rev": "38a7383f0804a963bb2e47e4e642b8ce886a4ea7"
 		},
 		{
 			"ImportPath": "github.com/StreamMeBots/pkg/tcpclient",
-			"Rev": "ffa2ce360dc784787361d12a9ced3a31b3089b44"
+			"Rev": "38a7383f0804a963bb2e47e4e642b8ce886a4ea7"
 		},
 		{
 			"ImportPath": "github.com/boltdb/bolt",
