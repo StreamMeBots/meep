@@ -5,4 +5,4 @@ meep.db
 config.json
 npm-debug.log
 node_modules
-client/build
+client/serve/build
