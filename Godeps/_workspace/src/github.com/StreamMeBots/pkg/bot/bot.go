@@ -1,6 +1,6 @@
 /*
-* Package bot
- */
+Package bot provides a simple library for creating a StreamMe chat bot
+*/
 package bot
 
 import (
@@ -14,14 +14,15 @@ import (
 	"github.com/StreamMeBots/pkg/tcpclient"
 )
 
+// State represents the state of the ot
 type State string
 
 // Connection States
 const (
-	Disconnected State = "Disconnected"
-	Connecting   State = "Connecting"
-	Connected    State = "Connected"
-	Joined       State = "Joined"
+	Disconnected State = "Disconnected" // Bot is disconnected
+	Connecting   State = "Connecting"   // Bot is connecting
+	Connected    State = "Connected"    // Bot is connected
+	Joined       State = "Joined"       // Bot joined a chat room
 )
 
 // Event types that can be sent down the subscribe channel
