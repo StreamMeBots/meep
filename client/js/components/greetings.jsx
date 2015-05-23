@@ -54,6 +54,7 @@ module.exports = React.createClass({
 				newUser: this.value('newUser'),
 				returningUser: this.value('returningUser'),
 				consecutiveUser: this.value('consecutiveUser'),
+				greetTrolls: this.state.greetTrolls,
 			}
 		}, function(err, resp, body) {
 			if(err) {
@@ -80,6 +81,13 @@ module.exports = React.createClass({
 		this.get();
 	},
 
+	toggleGreetTrolls: function() {
+		this.setState({
+			greetTrolls: !this.state.greetTrolls
+		});
+		this.save();
+	},
+
 	getContents: function() {
 		if(this.state.error) {
 			return (<p className='error'>{this.state.error}</p>);
@@ -98,6 +106,15 @@ module.exports = React.createClass({
 
 		var savedString = this.state.saved ? (<span className='message'>Saved!</span>) : '';
 
+		var trollClass, trollButtonText;
+		if(this.state.greetTrolls) {
+			trollClass = 'radio-button on';
+			trollButtonText = 'Stop !meeping with anonymous users';
+		} else {
+			trollClass = 'radio-button off';
+			trollButtonText = 'Start !meeping with anonymous users';
+		}
+
 		return (
 			<form>
 				<div className='field'>
@@ -111,6 +128,13 @@ module.exports = React.createClass({
 				<div className='field'>
 					<label>Consecutive User Greeting</label>
 					<textarea maxLength='250' name='consecutiveUser' placeholder='Consecutive user greeting'>{this.state.consecutiveUser}</textarea>
+				</div>
+				<div className='field'>
+					<label>
+						<a onClick={this.toggleGreetTrolls} className={trollClass} title={trollButtonText}>
+							{trollButtonText}
+						</a>
+					</label>
 				</div>
 				<div className='actions'>
 					{savedString}
