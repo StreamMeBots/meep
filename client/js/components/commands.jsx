@@ -105,6 +105,11 @@ var Command = React.createClass({
 		if(this.state.deleted) {
 			return <p>Deleted!</p>;
 		}
+
+		if(this.state.error) {
+			return (<p className='error'>{this.state.error}</p>);
+		}
+		
 		var savedString = this.state.saved ? (<span className='message'>Saved!</span>) : '';
 
 		return (
