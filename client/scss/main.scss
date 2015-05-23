@@ -1,6 +1,7 @@
 $meepRed: #D64541;
 $meepBlack: #201F1F;
 $meepDark: #3A2F2F;
+$chill: rgb(207, 226, 242);
 
 // Transitions (takes variable arguments)
 @mixin trans($param...) {
@@ -186,7 +187,19 @@ nav ul li a {
 		background-color: $meepDark;
 	}
 }
-
+.button.chill {
+	background-color: $chill;
+	color: #666;
+}
+.actions .button {
+	margin-left: 10px;
+}
+.card .button {
+	padding: 0.7em;
+}
+.card .message {
+	padding: 0.6em;
+}
 .stall {
 	@include fadein(0.5s);
 }
@@ -246,7 +259,7 @@ a {
 		display: block;
 		font-size: 1.1em;
 	}
-	textarea {
+	textarea, input[type="text"] {
 		resize: vertical;
 		width: 100%;
 		margin: 0.5em 0 1em 0;
@@ -260,11 +273,22 @@ a {
 }
 
 .message {
-	margin: 1em;
+	margin: 1em 0;
 	padding: 1em;
 	background-color: rgb(129, 221, 129);
 	color: #fafafa;
 	@include fadein(0.5s);
+}
+
+.fl {
+	float: left;
+}
+
+.separator {
+	width: 80%;
+	margin: 2em auto;
+	background-color: #eee;
+	height: 1px;
 }
 
 @keyframes fadein {

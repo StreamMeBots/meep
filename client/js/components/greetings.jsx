@@ -1,9 +1,9 @@
 var React = require('react'),
 	xhr = require('xhr'),
-	errors = require('./errors');
+	mixins = require('./mixins');
 
 module.exports = React.createClass({
-	mixins: [errors],
+	mixins: [mixins.errors],
 
 	getInitialState: function() {
 		return {
@@ -47,17 +47,13 @@ module.exports = React.createClass({
 	},
 
 	save: function() {
-		var value = function(v) {
-			return this.getDOMNode().querySelector('[name="'+v+'"]').value;
-		}.bind(this);
-
 		xhr({
 			method: 'POST',
 			uri: '/api/greeting-templates',
 			json: {
-				newUser: value('newUser'),
-				returningUser: value('returningUser'),
-				consecutiveUser: value('consecutiveUser'),
+				newUser: this.value('newUser'),
+				returningUser: this.value('returningUser'),
+				consecutiveUser: this.value('consecutiveUser'),
 			}
 		}, function(err, resp, body) {
 			if(err) {
@@ -67,14 +63,7 @@ module.exports = React.createClass({
 				return this.error(new Error('unexpected status code'));
 			}
 
-			if(this.savedTO) {
-				clearTimeout(this.savedTO);
-			}
-			this.savedTO = setTimeout(function(){
-				this.setState({
-					saved: false
-				});
-			}.bind(this), 5000);
+			this.saved();
 
 			this.setState({
 				loading: false,

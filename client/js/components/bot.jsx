@@ -1,11 +1,11 @@
 var React = require('react'),
 	moment = require('moment'),
 	xhr = require('xhr'),
-	errors = require('./errors'),
+	mixins = require('./mixins'),
 	OneMinute = 1000 * 60;
 
 module.exports = React.createClass({
-	mixins: [errors],
+	mixins: [mixins.errors],
 	getInitialState: function() {
 		return {
 			starting: false,
