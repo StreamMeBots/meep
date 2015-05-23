@@ -1,25 +1,21 @@
 var React = require('react'),
 	moment = require('moment'),
 	xhr = require('xhr'),
+	errors = require('./errors'),
 	OneMinute = 1000 * 60;
 
 module.exports = React.createClass({
+	mixins: [errors],
 	getInitialState: function() {
 		return {
 			starting: false,
-			loaded: false,
+			loading: true,
 			state: null,
 			started: null
 		}
 	},
 
-	error: function(err) {
-		console.error(err);
-		this.setState({
-			error: 'Sorry, we could not load your bot information.  Please try again later.'
-		});
-	},
-
+	// Get fresh data
 	get: function() {
 		this.getting = true;
 
@@ -38,7 +34,7 @@ module.exports = React.createClass({
 			this.getting = false;
 
 			this.setState({
-				loaded: true,
+				loading: false,
 				starting: false,
 				state: body.State,
 				started: moment(body.Started)
@@ -50,6 +46,7 @@ module.exports = React.createClass({
 		return !this.getting;
 	},
 
+	// Try to get fresh data
 	load: function() {
 		if(!this.shouldGet()) {
 			return;
@@ -57,6 +54,7 @@ module.exports = React.createClass({
 		this.get();
 	},
 
+	// Start the meeping!
 	start: function() {
 		this.setState({
 			starting: true
@@ -78,6 +76,7 @@ module.exports = React.createClass({
 		}.bind(this));
 	},
 
+	// Stop the meeping!
 	stop: function() {
 		this.setState({
 			stopping: true
@@ -96,28 +95,42 @@ module.exports = React.createClass({
 			}
 
 			this.setState({
-				loaded: true
+				loading: false
 			});
 			this.get();
 		}.bind(this));
 	},
 
+	// Start an infrequent short poll
 	componentWillMount: function() {
 		this.get();
 		this.slowShortPoll = setInterval(this.get.bind(this), OneMinute);
 	},
 
+	// Stop the short poll
 	componentWillUnmount: function() {
 		clearInterval(this.slowShortPoll);
 	},
 
-	render: function() {
-		var contents;
-
+	// Contents
+	getContents: function() {
 		if(this.state.error) {
-			contents = (<p className='error'>{this.state.error}</p>);
-		} else if (this.state.starting) {
-			contents = (
+			return (<p className='error'>{this.state.error}</p>);
+		}
+
+		if (this.state.loading) {
+			return (
+				<div>
+					<div className='details'>Trying to load the !meeping details</div>
+					<div className='actions'>
+						<a className='button' onClick={this.load} title='Refresh'>Check !meep</a>
+					</div>
+				</div>
+			);
+		}
+
+		if (this.state.starting) {
+			return (
 				<div>
 					<div className='details'>Starting !meep</div>
 					<div className='actions'>
@@ -125,33 +138,45 @@ module.exports = React.createClass({
 					</div>
 				</div>
 			);
-		} else {
-			switch(this.state.state) {
-				case 'notStarted': {
-					contents = (
-						<div>
-							<div className='details'>Not started</div>
-							<div className='actions'>
-								<a className='button' onClick={this.start} title='Start'>Start !meep</a>
-							</div>
-						</div>
-					)
-					break;
-				}
-				case 'Joined': {
-					contents = (
-						<div>
-							<div className='details'>!meep is in your channel !meeping</div>
-							<div className='actions'>
-								<a className='button' onClick={this.stop} title='Stop'>Stop !meeping</a>
-							</div>
-						</div>
-					)
-					break;
-				}
-			}
 		}
 
+		switch(this.state.state) {
+			case 'notStarted': {
+				return (
+					<div>
+						<div className='details'>Not started</div>
+						<div className='actions'>
+							<a className='button' onClick={this.start} title='Start'>Start !meep</a>
+						</div>
+					</div>
+				)
+			}
+			case 'Joined': {
+				return (
+					<div>
+						<div className='details'>!meeping since {this.state.started.format('dddd M/DD h:mm a')}</div>
+						<div className='actions'>
+							<a className='button' onClick={this.stop} title='Stop'>Stop !meeping</a>
+						</div>
+					</div>
+				)
+			}
+			case 'Connecting': {
+				return (
+					<div>
+						<div className='details'>!meep is connecting to your channel</div>
+						<div className='actions'>
+							<a className='button' onClick={this.stop} title='Stop'>Stop !meeping</a>
+						</div>
+					</div>
+				)
+			}
+		}
+	},
+
+	// Main render
+	render: function() {
+		var contents = this.getContents();
 
 		return (
 			<section className='card'>

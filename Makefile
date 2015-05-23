@@ -1,7 +1,16 @@
 serve:
 	cd client && npm run-script build
 
-dev: dev-assets serve
+serve:
+	cd client && npm run-script build
+
+dev: dev-assets serve build-dev run
+
+run:
+	godep go build -race -a && \
+		./meep -config-path="$(shell pwd)/config.json"
+
+build-dev:
 	godep go build -race -a && ./meep \
 		-bot-key="14c5f71d-bf9f-491a-a940-bc5c14f1744a" \
 		-bot-secret="85584c70bf15cbd89d20ab7a6438fefc227d712b5cfb77e7" \

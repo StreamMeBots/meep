@@ -16,7 +16,7 @@ User.prototype.isAuthenticated = function() {
 User.prototype.get = function(k) {
 	switch(k) {
 		case 'avatar':
-			return this.attributes._links.avatar.href || '';
+			return this.attributes._links.avatar.href || this.attributes._links.fallbackAvatar.href || '';
 		default:
 			return this.attributes[k] || '';
 	}

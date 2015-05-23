@@ -69,14 +69,14 @@ func (c *Command) Save(userBucket []byte) error {
 func Get(userBucket []byte, name string) (*Command, error) {
 	var cmd *Command
 	err := db.DB.View(func(tx *bolt.Tx) error {
-		ubkt, err := tx.CreateBucketIfNotExists(userBucket)
-		if err != nil {
-			return err
+		ubkt := tx.Bucket(userBucket)
+		if ubkt == nil {
+			return nil
 		}
 
-		bkt, err := ubkt.CreateBucketIfNotExists(BucketName)
-		if err != nil {
-			return err
+		bkt := ubkt.Bucket(BucketName)
+		if bkt == nil {
+			return nil
 		}
 
 		b := bkt.Get([]byte(name))
@@ -100,39 +100,65 @@ func Get(userBucket []byte, name string) (*Command, error) {
 }
 
 // GetAll gets all of a user's commands
-func GetAll(userBucket []byte, name string) ([]*Command, error) {
+func GetAll(userBucket []byte) ([]*Command, error) {
 	cmds := []*Command{}
-	/*
-		err := db.DB.View(func(tx *bolt.Tx) error {
-			ubkt, err := tx.CreateBucketIfNotExists(userBucket)
-			if err != nil {
-				return err
-			}
 
-			bkt, err := ubkt.CreateBucketIfNotExists(BucketName)
-			if err != nil {
-				return err
-			}
+	err := db.DB.View(func(tx *bolt.Tx) error {
+		ubkt := tx.Bucket(userBucket)
+		if ubkt == nil {
+			return nil
+		}
 
-			b := bkt.Get(name)
-			if b == nil {
+		bkt := ubkt.Bucket(BucketName)
+		if bkt == nil {
+			return nil
+		}
+
+		bkt.ForEach(func(k, v []byte) error {
+			cmd := &Command{}
+			if err := json.Unmarshal(v, &cmd); err != nil {
+				log.Println("msg='json-unmarshal-error', key='%v' value='%v' error='%v'", string(k), string(v), err)
 				return nil
 			}
 
-			if err := json.Unmarshal(b, &cmd); err != nil {
-				return nil, err
-			}
+			cmds = append(cmds, cmd)
 
 			return nil
 		})
 
-		if err != nil {
-			log.Println("msg='error-reading-command', error='%v', userBucket='%s'", err, string(userBucket))
-			return nil, err
-		}
-	*/
+		return nil
+	})
+
+	if err != nil {
+		log.Println("msg='error-reading-command', error='%v', userBucket='%s'", err, string(userBucket))
+		return nil, err
+	}
 
 	return cmds, nil
+}
+
+// Delete deletes a command from a user's bucket
+func Delete(userBucket []byte, name string) error {
+	err := db.DB.Update(func(tx *bolt.Tx) error {
+		ubkt := tx.Bucket(userBucket)
+		if ubkt == nil {
+			return nil
+		}
+
+		bkt := ubkt.Bucket(BucketName)
+		if bkt == nil {
+			return nil
+		}
+
+		return bkt.Delete([]byte(name))
+	})
+
+	if err != nil {
+		log.Println("msg='error-saving-command', error='%v', userBucket='%s'", err, string(userBucket))
+		return err
+	}
+
+	return nil
 }
 
 // Say checks if the message is a command and if it is provies and answer to the command
