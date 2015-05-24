@@ -1,0 +1,58 @@
+#!/usr/bin/env node
+
+var _ = require('lodash'),
+	fs = require('fs'),
+	spawn = require('child_process').spawn;
+
+var lockVals = {};
+var lock = function(s) {
+	if(lockVals[s]) {
+		return;
+	}
+	lockVals[s] = true;
+}
+var unlock = function(s) {
+	lockVals[s] = false;
+}
+
+var build = function(type) {
+	if(lock(type)) {
+		return;
+	}
+
+	var job = spawn('npm', ['run-script', type]);
+
+	job.stderr.on('data', function(data) {
+		process.stderr.write(data.toString());
+	});
+	job.stdout.on('data', function(data) {
+		process.stdout.write(data.toString());
+	});
+	job.on('end', function(code) {
+		if(code) {
+			console.error(type + ' failed.\n');
+		} else {
+			console.log(type + ' succeeded.\n');
+		}
+
+		unlock(type);
+	});
+}
+
+var buildJs = _.debounce(function(){
+	build('js');
+}, 200);
+
+var buildScss = _.debounce(function(){
+	build('scss');
+}, 200);
+
+fs.watch('./js', {
+	recursive: true,
+	persistent: true
+}, buildJs);
+
+fs.watch('./scss', {
+	recursive: true,
+	persistent: true
+}, buildScss);

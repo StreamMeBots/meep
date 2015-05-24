@@ -51,6 +51,12 @@ func (uc *UserClients) Add(sessid string, u user.User, client *http.Client) {
 }
 
 func newAuth(c config.Config) authConfig {
+	domain := c.ServerHost
+
+	if len(c.ServerPort) > 0 {
+		domain += ":" + c.ServerPort
+	}
+
 	conf := oauth2.Config{
 		ClientID:     c.ClientId,
 		ClientSecret: c.ClientSecret,
@@ -59,7 +65,7 @@ func newAuth(c config.Config) authConfig {
 			AuthURL:  c.AuthURL,
 			TokenURL: c.TokenURL,
 		},
-		RedirectURL: "http://" + c.ServerHost + c.ServerPort + "/login-redirect",
+		RedirectURL: "http://" + domain + "/login-redirect",
 	}
 
 	return authConfig{
