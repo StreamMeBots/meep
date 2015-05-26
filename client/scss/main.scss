@@ -103,6 +103,11 @@ header {
 nav {
 	float: right;
 	margin: 1em;
+	color: #fafafa;
+
+	.welcome {
+		margin-right: 1em;
+	}
 }
 nav ul {
 	list-style: none;
@@ -114,7 +119,7 @@ nav ul li {
 }
 nav ul li a {
 	text-decoration: none;
-	color: #eee;
+	color: #fafafa;
 }
 
 .meep-red, a.meep-red {
@@ -212,7 +217,7 @@ nav ul li a {
 }
 
 .card {
-	padding: 1em;
+	padding: 1em 2em;
 	background-color: #fafafa;
 	border: 1px solid #ddd;
 	margin: 1em;
@@ -265,8 +270,7 @@ a {
 		margin: 0.5em 0 1em 0;
 		font-size: 0.85em;
 		border: 0;
-		padding: 1em 0;
-		text-indent: 1em;
+		padding: 1em;
 		color: #222;
 		font-family: Roboto Slab;
 	}
