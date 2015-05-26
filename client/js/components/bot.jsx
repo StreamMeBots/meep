@@ -180,7 +180,7 @@ module.exports = React.createClass({
 
 		return (
 			<section className='card'>
-				<h1>!meep bot status</h1>
+				<h1>!meeping status</h1>
 				{contents}
 			</section>
 		);

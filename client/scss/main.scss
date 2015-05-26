@@ -143,14 +143,13 @@ nav ul li a {
 		font-size: 2.4em;
 		font-weight: 300;
 		margin: 0;
-		padding: .5em 0;
+		padding: .5em 0 0;
 	}
 	ul {
 		color: #444;
 		font-size: 0.85em;
 		list-style: none;
-		margin: 0 auto;
-		width: 90%;
+		margin: 0;
 		padding: 0;
 
 		li {
@@ -212,7 +211,7 @@ nav ul li a {
 .content {
 	margin: 2em;
 	p {
-		margin: 1em 1.1em;
+		margin: 1em 0;
 	}
 }
 

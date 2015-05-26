@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/StreamMeBots/meep/pkg/config"
 	"net/http"
 	"strconv"
 	"time"
@@ -46,7 +47,8 @@ type User struct {
 
 // Get gets a user from stream.me using a pre-authorized http client
 func GetByClient(client *http.Client, userIp string) (*User, error) {
-	resp, err := client.Get("http://pds.dev.ifi.tv/api-user/v1/me")
+
+	resp, err := client.Get(config.Conf.Url + "/api-user/v1/me")
 	if err != nil {
 		return nil, err
 	}
