@@ -263,11 +263,10 @@ func (b *Bot) join(cmd *commands.Command) {
 
 	e := greetings.Join(user.BucketName(b.UserPublicId), b.bucketKey(), cmd)
 	if len(e.Response) > 0 {
-		if e.Public {
-			// TODO: add stat
-			b.bot.Say(e.Response)
-		} else {
+		if e.Private {
 			// TODO: meep command only
+		} else {
+			b.bot.Say(e.Response)
 		}
 	}
 }

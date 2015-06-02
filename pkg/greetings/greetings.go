@@ -26,7 +26,7 @@ type Event struct {
 	NewUser    bool      `json:"newUser"`
 	LastVisit  time.Time `json:"lastVisit"`
 	Time       time.Time `json:"time"`
-	Public     bool      `json:"public"`
+	Private    bool      `json:"private"`
 
 	troll bool
 	tmpl  *Template
@@ -43,7 +43,7 @@ type Template struct {
 	NewUser            string `json:"newUser"`
 	ReturningUser      string `json:"returningUser"`
 	ConsecutiveUser    string `json:"consecutiveUser"`
-	Public             bool   `json:"public"`
+	Private            bool   `json:"private"`
 	GreetTrolls        bool   `json:"greetTrolls"`
 	AnsweringMachine   string `json:"answeringMachine"`
 	AnsweringMachineOn bool   `json:"answeringMachineOn"`
@@ -149,7 +149,7 @@ func Join(userBucket, botBucket []byte, cmd *commands.Command) Event {
 		// get greetings template for chat room owner
 		userBkt := tx.Bucket(userBucket)
 		if userBkt == nil {
-			// user has not a greetting template yet
+			// user does not have greetting template yet
 			return nil
 		}
 		b = userBkt.Get(TemplateKeyName)
@@ -192,7 +192,7 @@ func (e *Event) populate() {
 		if len(e.Response) > 0 {
 			e.LastVisit = e.Time
 			e.Time = time.Now()
-			e.Public = e.tmpl.Public
+			e.Private = e.tmpl.Private
 		}
 	}()
 
