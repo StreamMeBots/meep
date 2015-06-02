@@ -11,6 +11,8 @@ import (
 	"github.com/StreamMeBots/meep/pkg/greetings"
 	"github.com/StreamMeBots/meep/pkg/stats"
 	"github.com/StreamMeBots/meep/pkg/user"
+
+	"github.com/StreamMeBots/meep/pkg/command"
 	pkgBot "github.com/StreamMeBots/pkg/bot"
 	"github.com/StreamMeBots/pkg/commands"
 	"github.com/boltdb/bolt"
@@ -191,6 +193,8 @@ func (b *Bot) read() {
 		switch cmd.Name {
 		case commands.LJoin:
 			b.join(cmd)
+		case commands.LSay:
+			b.say(cmd)
 		}
 	}
 }
@@ -224,14 +228,29 @@ func (b *Bot) stat(cmd *commands.Command) {
 
 }
 
+func (b *Bot) say(cmd *commands.Command) {
+	stats.Line(b.bucketKey())
+	m := cmd.Get("message")
+	if len(m) > 2 && m[0] == '!' {
+		if say := command.Say(user.BucketName(b.UserPublicId), cmd); len(say) > 0 {
+			b.bot.Say(say)
+		}
+	}
+}
+
 func (b *Bot) join(cmd *commands.Command) {
 	// noop for bots
 	if bot := cmd.Get("bot"); bot == "true" {
 		return
 	}
 
-	msg := greetings.Join(user.BucketName(b.UserPublicId), b.bucketKey(), cmd)
-	if len(msg) > 0 {
-		b.bot.Say(msg)
+	e := greetings.Join(user.BucketName(b.UserPublicId), b.bucketKey(), cmd)
+	if len(e.Response) > 0 {
+		if e.Public {
+			// TODO: add stat
+			b.bot.Say(e.Response)
+		} else {
+			// TODO: meep command only
+		}
 	}
 }

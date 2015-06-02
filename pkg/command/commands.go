@@ -1,9 +1,11 @@
 package command
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 	"text/template"
 
 	"github.com/StreamMeBots/meep/pkg/db"
@@ -161,7 +163,29 @@ func Delete(userBucket []byte, name string) error {
 	return nil
 }
 
-// Say checks if the message is a command and if it is provies and answer to the command
+// Say checks if the message is a command and if it is provides an answer to the command
 func Say(userBucket []byte, cmd *commands.Command) string {
-	return ""
+	s := strings.TrimSpace(cmd.Get("message")[1:])
+	c, err := Get(userBucket, s)
+	if err != nil {
+		return ""
+	}
+
+	return parseTemplate(c.Template, cmd.Args)
+}
+
+func parseTemplate(tmpl string, d interface{}) string {
+	t, err := template.New("msg").Parse(tmpl)
+	if err != nil {
+		log.Println("msg='error parsing template', template='%s', error='%v'", tmpl, err)
+		return ""
+	}
+
+	buf := &bytes.Buffer{}
+	if err := t.Execute(buf, d); err != nil {
+		log.Println("msg='error executing template', template='%s', data='%+v', error='%v'", tmpl, d, err)
+		return ""
+	}
+
+	return buf.String()
 }
