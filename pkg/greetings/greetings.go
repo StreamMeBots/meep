@@ -18,6 +18,14 @@ var TemplateKeyName = []byte("grettingsTemplate")
 
 var GreetingsKeyName = []byte("greetings")
 
+// greeting types
+var (
+	newUser          = "newUser"
+	returningUser    = "returningUser"
+	consecutiveUser  = "consecutiveUser"
+	answeringMachine = "answeringMachine"
+)
+
 type Event struct {
 	Type       string    `json:"type"`
 	Response   string    `json:"response"`
@@ -200,10 +208,18 @@ func (e *Event) populate() {
 		return
 	}
 
+	if e.tmpl.AnsweringMachineOn {
+		e.Type = answeringMachine
+		e.parseTemplate(e.tmpl.AnsweringMachine)
+		return
+	}
+
 	if e.Time.IsZero() {
 		// greet user as a new user
 		e.DaysInARow = 1
-		e.parseTemplate(e.tmpl.NewUser, "newUser", e)
+		e.Type = newUser
+		e.parseTemplate(e.tmpl.NewUser)
+		return
 	}
 
 	today := now.BeginningOfDay()
@@ -211,33 +227,28 @@ func (e *Event) populate() {
 	if today.Equal(lastVisit.Add(time.Hour * 24)) {
 		// greet as a consecutive user if the user returned the next day
 		e.DaysInARow++
-		e.parseTemplate(e.tmpl.ConsecutiveUser, "consecutiveUser", e)
+		e.Type = consecutiveUser
+		e.parseTemplate(e.tmpl.ConsecutiveUser)
 		return
 	}
 
 	if time.Now().After(e.Time.Add(DayDuration)) {
 		// greet as a returning user if it's been more than day
-		e.parseTemplate(e.tmpl.ReturningUser, "returningUser", e)
+		e.Type = returningUser
+		e.parseTemplate(e.tmpl.ReturningUser)
 	}
 }
 
-func (e *Event) parseTemplate(tmpl string, respType string, d interface{}) {
-	var t *template.Template
-	var err error
-	if e.tmpl.AnsweringMachineOn {
-		e.Type = "answeringMachine"
-		t, err = template.New("msg").Parse(e.tmpl.AnsweringMachine)
-	} else {
-		t, err = template.New("msg").Parse(tmpl)
-	}
+func (e *Event) parseTemplate(tmpl string) {
+	t, err := template.New("msg").Parse(tmpl)
 	if err != nil {
 		log.Println("msg='error parsing template', template='%s', error='%v'", tmpl, err)
 		return
 	}
 
 	buf := &bytes.Buffer{}
-	if err := t.Execute(buf, d); err != nil {
-		log.Println("msg='error executing template', template='%s', data='%+v', error='%v'", tmpl, d, err)
+	if err := t.Execute(buf, e); err != nil {
+		log.Println("msg='error executing template', template='%s', data='%+v', error='%v'", tmpl, e, err)
 		return
 	}
 
