@@ -11,7 +11,8 @@ var Command = React.createClass({
 		return {
 			name: this.props.name,
 			template: this.props.template,
-			deleted: false
+			dellable: this.props.dellable,
+			deleted: false,
 		};
 	},
 
@@ -86,7 +87,8 @@ var Command = React.createClass({
 
 			this.setState({
 				loading: false,
-				saved: true
+				saved: true,
+				dellable: true
 			});
 		}.bind(this));
 	},
@@ -112,6 +114,12 @@ var Command = React.createClass({
 		
 		var savedString = this.state.saved ? (<span className='message'>Saved!</span>) : '';
 
+		var delButton;
+
+		if(this.state.dellable) {
+			delButton = <a className='button chill' onClick={this.clickDel} title='Delete'>Delete</a>;
+		}
+
 		return (
 			<form>
 				<div className='field'>
@@ -121,12 +129,12 @@ var Command = React.createClass({
 
 				<div className='field'>
 					<label>Response</label>
-					<textarea maxLength='250' name='template' placeholder='Response'>{this.state.template}</textarea>
+					<textarea maxLength='250' name='template' placeholder='Response' defaultValue={this.state.template}></textarea>
 				</div>
 
 				<div className='actions'>
 					{savedString}
-					<a className='button chill' onClick={this.clickDel} title='Delete'>Delete</a>
+					{delButton}
 					<a className='button' onClick={this.save} title='Save'>Save the !meeping greetings</a>
 				</div>
 			</form>
@@ -203,11 +211,11 @@ module.exports = React.createClass({
 	componentWillMount: function() {
 		this.get();
 
-		pubsub.on('command:updated', this.updateCommand.bind(this));
+		pubsub.on('command:updated', this.updateCommand);
 	},
 
 	componentWillUnmount: function() {
-		pubsub.off('command:updated', this.updateCommand.bind(this));
+		pubsub.off('command:updated', this.updateCommand);
 	},
 
 	getContents: function() {
@@ -233,7 +241,7 @@ module.exports = React.createClass({
 			if(commands.length > 0) {
 				commands.push( <div className='separator' /> );
 			}
-			commands.push( <Command id={command.id} name={command.name} template={command.template} /> );
+			commands.push( <Command id={command.id} dellable={!!command.name} name={command.name} template={command.template} /> );
 		}
 		for(var i=0; i<this.state.commands.length; i++) {
 			c = this.state.commands[i];

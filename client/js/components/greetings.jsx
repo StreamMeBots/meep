@@ -11,7 +11,9 @@ module.exports = React.createClass({
 			newUser: "",
 			returningUser: "",
 			consecutiveUser: "",
-			greetTrolls: false
+			greetTrolls: false,
+			answeringMachineOn: true,
+			answeringMachine: ""
 		}
 	},
 
@@ -41,7 +43,9 @@ module.exports = React.createClass({
 				newUser: body.newUser,
 				returningUser: body.returningUser,
 				consecutiveUser: body.consecutiveUser,
-				greetTrolls: body.greetTrolls
+				greetTrolls: body.greetTrolls,
+				answeringMachine: body.answeringMachine,
+				answeringMachineOn: body.answeringMachineOn
 			});
 		}.bind(this));
 	},
@@ -54,7 +58,9 @@ module.exports = React.createClass({
 				newUser: this.value('newUser'),
 				returningUser: this.value('returningUser'),
 				consecutiveUser: this.value('consecutiveUser'),
+				answeringMachine: this.value('answeringMachine'),
 				greetTrolls: this.state.greetTrolls,
+				answeringMachineOn: this.state.answeringMachineOn
 			}
 		}, function(err, resp, body) {
 			if(err) {
@@ -71,6 +77,7 @@ module.exports = React.createClass({
 				saved: true,
 				newUser: body.newUser,
 				returningUser: body.returningUser,
+				answeringMachine: body.answeringMachine,
 				consecutiveUser: body.consecutiveUser,
 				greetTrolls: body.greetTrolls
 			});
@@ -84,8 +91,13 @@ module.exports = React.createClass({
 	toggleGreetTrolls: function() {
 		this.setState({
 			greetTrolls: !this.state.greetTrolls
-		});
-		this.save();
+		}, this.save);
+	},
+
+	toggleAnsweringMachine: function() {
+		this.setState({
+			answeringMachineOn: !this.state.answeringMachineOn
+		}, this.save);
 	},
 
 	getContents: function() {
@@ -106,7 +118,7 @@ module.exports = React.createClass({
 
 		var savedString = this.state.saved ? (<span className='message'>Saved!</span>) : '';
 
-		var trollClass, trollButtonText;
+		var trollClass, trollButtonText, answeringMachineOnOff;
 		if(this.state.greetTrolls) {
 			trollClass = 'radio-button on';
 			trollButtonText = 'Stop !meeping with anonymous users';
@@ -115,19 +127,29 @@ module.exports = React.createClass({
 			trollButtonText = 'Start !meeping with anonymous users';
 		}
 
+		if(this.state.answeringMachineOn) {
+			answeringMachineOnOff = <a onClick={this.toggleAnsweringMachine} className='on fr'>Turn answering machine off</a>
+		} else {
+			answeringMachineOnOff = <a onClick={this.toggleAnsweringMachine} className='off fr'>Turn answering machine on</a>
+		}
+
 		return (
 			<form>
 				<div className='field'>
 					<label>New User Greeting</label>
-					<textarea maxLength='250' name='newUser' placeholder='New user greeting'>{this.state.newUser}</textarea>
+					<textarea maxLength='250' name='newUser' placeholder='New user greeting' defaultValue={this.state.newUser}></textarea>
 				</div>
 				<div className='field'>
 					<label>Returning User Greeting</label>
-					<textarea maxLength='250' name='returningUser' placeholder='Returning user greeting'>{this.state.returningUser}</textarea>
+					<textarea maxLength='250' name='returningUser' placeholder='Returning user greeting' defaultValue={this.state.returningUser}></textarea>
 				</div>
 				<div className='field'>
 					<label>Consecutive User Greeting</label>
-					<textarea maxLength='250' name='consecutiveUser' placeholder='Consecutive user greeting'>{this.state.consecutiveUser}</textarea>
+					<textarea maxLength='250' name='consecutiveUser' placeholder='Consecutive user greeting' defaultValue={this.state.consecutiveUser}></textarea>
+				</div>
+				<div className='field'>
+					<label>Answering Machine {answeringMachineOnOff}</label>
+					<textarea maxLength='250' name='answeringMachine' placeholder='Answering machine greeting' defaultValue={this.state.answeringMachine}></textarea>
 				</div>
 				<div className='field'>
 					<label>
