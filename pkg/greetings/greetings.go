@@ -197,6 +197,10 @@ func Join(userBucket, botBucket []byte, cmd *commands.Command) Event {
 
 func (e *Event) populate() {
 	defer func() {
+		if e.tmpl.AnsweringMachineOn {
+			e.Private = false
+			return
+		}
 		if len(e.Response) > 0 {
 			e.LastVisit = e.Time
 			e.Time = time.Now()
