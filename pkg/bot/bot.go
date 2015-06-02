@@ -3,6 +3,8 @@ package bot
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"sync"
 
@@ -45,7 +47,7 @@ func (bs *Bots) Start(userPublicId string, client *http.Client) error {
 	}
 	bs.RUnlock()
 
-	bt, err := NewBot(userPublicId)
+	bt, err := NewBot(userPublicId, client)
 	if err != nil {
 		return err
 	}
@@ -72,7 +74,7 @@ func (bs *Bots) Info(userPublicId string) pkgBot.Info {
 //	- creates a bucket in the bolt db
 //	- starts the bots read loop
 //	- authorizes the bot
-func NewBot(userPublicId string) (Bot, error) {
+func NewBot(userPublicId string, client *http.Client) (Bot, error) {
 	var bt Bot
 	b, err := pkgBot.New(config.Conf.ChatHost, config.Conf.BotKey, config.Conf.BotSecret, userPublicId)
 	if err != nil {
@@ -83,17 +85,20 @@ func NewBot(userPublicId string) (Bot, error) {
 		UserPublicId: userPublicId,
 		bot:          b,
 		stop:         make(chan struct{}),
+		client:       client,
 	}
 
 	// auth bot with user's chat room
-	/* TODO: blocked by node work
-	if err := bt.auth(); err != nil {
-		return bt, err
-	}
+	// TODO: blocked by node work
+	/*
+		if err := bt.auth(); err != nil {
+			return bt, err
+		}
 	*/
 
 	// create buckets for bot
 	err = db.DB.Update(func(tx *bolt.Tx) error {
+		log.Println("create bucket:", string(bt.bucketKey()))
 		bkt, err := tx.CreateBucketIfNotExists(bt.bucketKey())
 		if err != nil {
 			return err
@@ -112,6 +117,7 @@ func NewBot(userPublicId string) (Bot, error) {
 		return nil
 	})
 	if err != nil {
+		log.Println("bot: Error creating bot buckets:", err)
 		return bt, err
 	}
 
@@ -202,17 +208,20 @@ func (b *Bot) read() {
 // auth authorizes the bot with the user's chat room
 func (b *Bot) auth() error {
 	url := fmt.Sprintf(
-		config.Conf.Url+"/api-chat/v1/users/%s/authorized-bots/%s",
-		b.UserPublicId,
+		// /v1/rooms/:roomPublicId/authorized-bots/:botId
+		config.Conf.Url+"/api-chat/v1/rooms/%s/authorized-bots/%s",
 		b.bot.RoomId(),
+		b.bot.Key,
 	)
 	req, err := http.NewRequest("PUT", url, nil)
 	if err != nil {
+		log.Printf("msg='error-creating-request', error='%v'\n", err)
 		return err
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := b.client.Do(req)
 	if err != nil {
+		log.Printf("msg='request-error', error='%v'\n", err)
 		return err
 	}
 	defer resp.Body.Close()
@@ -220,6 +229,14 @@ func (b *Bot) auth() error {
 	if resp.StatusCode == 200 {
 		return nil
 	}
+
+	bd, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("msg='error-reading-response-body', error='%v'\n", err)
+		return err
+	}
+
+	log.Printf("auth-error-body='%s' statusCode='%v'\n", string(bd), resp.StatusCode)
 
 	return ErrAuthNon200
 }

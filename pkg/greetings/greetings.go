@@ -124,12 +124,12 @@ func Join(userBucket, botBucket []byte, cmd *commands.Command) Event {
 	e := Event{}
 	err := db.DB.Update(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(botBucket)
-		if bkt != nil {
-			return fmt.Errorf("missing bot bucket")
+		if bkt == nil {
+			return fmt.Errorf("missing bot bucket: %s", string(botBucket))
 		}
 		bkt = bkt.Bucket(GreetingsKeyName)
-		if bkt != nil {
-			return fmt.Errorf("missing grettings bucket")
+		if bkt == nil {
+			return fmt.Errorf("missing grettings bucket: %s", string(GreetingsKeyName))
 		}
 
 		e.troll = cmd.Get("role") == "guest"
@@ -181,7 +181,7 @@ func Join(userBucket, botBucket []byte, cmd *commands.Command) Event {
 	})
 
 	if err != nil {
-		log.Println("msg='greetings-join-error', error='%s'", err)
+		log.Printf("msg='greetings-join-error', error='%s'\n", err)
 	}
 
 	return e

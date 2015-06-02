@@ -23,6 +23,7 @@ type Config struct {
 	ServerBehindProxy bool   `json:"serverBehindProxy"`
 	AuthURL           string `json:"authURL"`
 	TokenURL          string `json:"tokenURL"`
+	RedirectURL       string `json:"redirectURL"`
 	Url               string `json:"URL"`
 	Debug             bool   `json:"debug"`
 }
@@ -39,6 +40,7 @@ func init() {
 	flag.StringVar(&Conf.ServerHost, "server-host", "", "http server host")
 	flag.StringVar(&Conf.AuthURL, "auth-url", "", "oauth2 auth url")
 	flag.StringVar(&Conf.TokenURL, "token-url", "", "oauth2 token url")
+	flag.StringVar(&Conf.RedirectURL, "redirect-url", "http://localhost:8888/redirect-url", "oauth redirect url")
 	flag.StringVar(&Conf.Url, "url", "", "stream.me address")
 	flag.BoolVar(&Conf.ServerBehindProxy, "behind-proxy", false, "indicate if the server is behind a proxy")
 	flag.BoolVar(&Conf.Debug, "debug", false, "enable debug logging")

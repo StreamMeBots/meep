@@ -3,6 +3,7 @@ package command
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -15,6 +16,8 @@ import (
 
 // BucketName bucket name in bolt
 var BucketName = []byte(`commands`)
+
+var ErrCommandNotFound = errors.New("Command not found")
 
 // Command represents a command response template.
 type Command struct {
@@ -98,6 +101,10 @@ func Get(userBucket []byte, name string) (*Command, error) {
 		return nil, err
 	}
 
+	if cmd == nil {
+		return nil, ErrCommandNotFound
+	}
+
 	return cmd, nil
 }
 
@@ -165,7 +172,7 @@ func Delete(userBucket []byte, name string) error {
 
 // Say checks if the message is a command and if it is provides an answer to the command
 func Say(userBucket []byte, cmd *commands.Command) string {
-	s := strings.TrimSpace(cmd.Get("message")[1:])
+	s := strings.TrimSpace(cmd.Get("message"))
 	c, err := Get(userBucket, s)
 	if err != nil {
 		return ""

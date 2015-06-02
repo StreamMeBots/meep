@@ -36,9 +36,9 @@ type (
 
 // Bot represents a bot user to a stream.me chat server.
 type Bot struct {
-	room    commands.Room
-	key     string
-	secret  string
+	Room    commands.Room
+	Key     string
+	Secret  string
 	tcp     *tcpclient.Client
 	state   State
 	mx      sync.RWMutex
@@ -48,7 +48,7 @@ type Bot struct {
 
 // RoomId returns the chat room ID that the bot uses to connect to the chat room.
 func (b *Bot) RoomId() string {
-	return string(b.room)
+	return string(b.Room)
 }
 
 // Info represents stats and state about a bot.
@@ -60,9 +60,9 @@ type Info struct {
 // New is the constructor for Bot. The Bot will connect and join to the bot's configured chat room
 func New(host, key, secret, userPublicId string) (*Bot, error) {
 	b := &Bot{
-		room:    commands.NewRoom(userPublicId),
-		key:     key,
-		secret:  secret,
+		Room:    commands.NewRoom(userPublicId),
+		Key:     key,
+		Secret:  secret,
 		tcp:     tcpclient.New(host),
 		started: time.Now().UTC(),
 		state:   Disconnected,
@@ -149,7 +149,7 @@ func (b *Bot) ReadTimeout(d time.Duration) (*commands.Command, error) {
 
 // Pass authenticates the bot to the their chat room
 func (b *Bot) Pass() error {
-	cmd, err := b.retryTimeout(b.room.Pass(b.key, b.secret), commands.LPass, 5, time.Second*5)
+	cmd, err := b.retryTimeout(b.Room.Pass(b.Key, b.Secret), commands.LPass, 5, time.Second*5)
 	if err != nil {
 		return err
 	}
@@ -163,7 +163,7 @@ func (b *Bot) Pass() error {
 
 // Join joins the bot to their chat room
 func (b *Bot) Join() error {
-	_, err := b.retryTimeout(b.room.Join(), commands.LJoin, 5, time.Second*5)
+	_, err := b.retryTimeout(b.Room.Join(), commands.LJoin, 5, time.Second*5)
 	if err != nil {
 		return err
 	}
@@ -173,42 +173,42 @@ func (b *Bot) Join() error {
 
 // Say sends the SAY command to the chat room
 func (b *Bot) Say(msg string) error {
-	return b.write(b.room.Say(msg))
+	return b.write(b.Room.Say(msg))
 }
 
 // Kick is used to kick a user from chat
 func (b *Bot) Kick(userPublicId string) error {
-	return b.write(b.room.Kick(userPublicId))
+	return b.write(b.Room.Kick(userPublicId))
 }
 
 // Ban is used to Ban a user from chat
 func (b *Bot) Ban(userPublicId string) error {
-	return b.write(b.room.Ban(userPublicId))
+	return b.write(b.Room.Ban(userPublicId))
 }
 
 // Mod is used to mod a user in chat
 func (b *Bot) Mod(userPublicId string) error {
-	return b.write(b.room.Mod(userPublicId))
+	return b.write(b.Room.Mod(userPublicId))
 }
 
 // MuteGuest is used to mute a user with a role of "guest"
 func (b *Bot) MuteGuest(userPublicId string) error {
-	return b.write(b.room.MuteGuest(userPublicId))
+	return b.write(b.Room.MuteGuest(userPublicId))
 }
 
 // Mute is used to mute a user
 func (b *Bot) Mute(userPublicId string) error {
-	return b.write(b.room.Mute(userPublicId))
+	return b.write(b.Room.Mute(userPublicId))
 }
 
 // Unmute unmutes a previously muted user
 func (b *Bot) UnMute(userPublicId string) error {
-	return b.write(b.room.UnMute(userPublicId))
+	return b.write(b.Room.UnMute(userPublicId))
 }
 
 // Leave sends the Leave command and disconnects the bot from the chat server
 func (b *Bot) Leave() {
-	b.write(b.room.Leave())
+	b.write(b.Room.Leave())
 	b.tcp.Close()
 	b.setState(Disconnected)
 }
@@ -246,7 +246,7 @@ func (b *Bot) retryTimeout(command string, checkCommand string, retryCount int, 
 			continue
 		}
 		if cmd.Name != checkCommand {
-			log.Printf("%s: wrong command: %s. Trying again...\n", checkCommand, cmd.Name)
+			log.Printf("%s: wrong command: %s Args: %+v. Trying again...\n", checkCommand, cmd.Name, cmd.Args)
 			continue
 		}
 		break

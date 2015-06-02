@@ -65,7 +65,7 @@ func newAuth(c config.Config) authConfig {
 			AuthURL:  c.AuthURL,
 			TokenURL: c.TokenURL,
 		},
-		RedirectURL: "http://" + domain + "/login-redirect",
+		RedirectURL: c.RedirectURL,
 	}
 
 	return authConfig{

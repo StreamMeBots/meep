@@ -3,7 +3,7 @@ var React = require('react'),
 	mixins = require('./mixins');
 
 module.exports = React.createClass({
-	mixins: [mixins.errors],
+	mixins: [mixins.errors, mixins.forms],
 
 	getInitialState: function() {
 		return {

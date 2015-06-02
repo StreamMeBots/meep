@@ -137,7 +137,9 @@ func (c *Client) Read(readTimeout time.Duration) (*commands.Command, error) {
 	case err := <-r.err:
 		if err == io.EOF {
 			c.wg.Add(1)
+			c.Lock()
 			c.waiting = true
+			c.Unlock()
 		}
 		return nil, err
 	}
