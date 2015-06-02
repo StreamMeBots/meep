@@ -104,7 +104,7 @@ module.exports = React.createClass({
 	// Start an infrequent short poll
 	componentWillMount: function() {
 		this.get();
-		this.slowShortPoll = setInterval(this.get.bind(this), OneMinute);
+		this.slowShortPoll = setInterval(this.get, OneMinute);
 	},
 
 	// Stop the short poll

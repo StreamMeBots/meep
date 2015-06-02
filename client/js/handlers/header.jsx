@@ -8,7 +8,7 @@ module.exports = function(el) {
 	if(user.isAuthenticated()) {
 		var avatarStyle = {
 			background: 'url(' + user.get('avatar') + ')',
-			'background-size': 'cover'
+			'backgroundSize': 'cover'
 		};
 
 		var channelLink = 'https://www.stream.me/' + user.get('username');

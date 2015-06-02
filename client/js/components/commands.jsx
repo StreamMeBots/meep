@@ -121,7 +121,7 @@ var Command = React.createClass({
 
 				<div className='field'>
 					<label>Response</label>
-					<textarea maxLength='250' name='template' placeholder='Response'>{this.state.template}</textarea>
+					<textarea maxLength='250' name='template' placeholder='Response' defaultValue={this.state.template}></textarea>
 				</div>
 
 				<div className='actions'>
@@ -203,11 +203,11 @@ module.exports = React.createClass({
 	componentWillMount: function() {
 		this.get();
 
-		pubsub.on('command:updated', this.updateCommand.bind(this));
+		pubsub.on('command:updated', this.updateCommand);
 	},
 
 	componentWillUnmount: function() {
-		pubsub.off('command:updated', this.updateCommand.bind(this));
+		pubsub.off('command:updated', this.updateCommand);
 	},
 
 	getContents: function() {
