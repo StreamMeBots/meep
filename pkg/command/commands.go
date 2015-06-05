@@ -9,14 +9,14 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/StreamMeBots/meep/pkg/buckets"
 	"github.com/StreamMeBots/meep/pkg/db"
 	"github.com/StreamMeBots/pkg/commands"
+
 	"github.com/boltdb/bolt"
 )
 
-// BucketName bucket name in bolt
-var BucketName = []byte(`commands`)
-
+// Errors
 var ErrCommandNotFound = errors.New("Command not found")
 
 // Command represents a command response template.
@@ -44,17 +44,12 @@ func (c *Command) Validate() error {
 // Save saves the command
 func (c *Command) Save(userBucket []byte) error {
 	err := db.DB.Update(func(tx *bolt.Tx) error {
-		ubkt, err := tx.CreateBucketIfNotExists(userBucket)
-		if err != nil {
-			return err
-		}
-
-		bkt, err := ubkt.CreateBucketIfNotExists(BucketName)
-		if err != nil {
-			return err
-		}
-
 		b, err := json.Marshal(c)
+		if err != nil {
+			return err
+		}
+
+		bkt, err := buckets.UserCommands(userBucket, tx)
 		if err != nil {
 			return err
 		}
@@ -73,15 +68,10 @@ func (c *Command) Save(userBucket []byte) error {
 // Get gets a single command
 func Get(userBucket []byte, name string) (*Command, error) {
 	var cmd *Command
-	err := db.DB.View(func(tx *bolt.Tx) error {
-		ubkt := tx.Bucket(userBucket)
-		if ubkt == nil {
-			return nil
-		}
-
-		bkt := ubkt.Bucket(BucketName)
-		if bkt == nil {
-			return nil
+	err := db.DB.Update(func(tx *bolt.Tx) error {
+		bkt, err := buckets.UserCommands(userBucket, tx)
+		if err != nil {
+			return err
 		}
 
 		b := bkt.Get([]byte(name))
@@ -97,7 +87,7 @@ func Get(userBucket []byte, name string) (*Command, error) {
 	})
 
 	if err != nil {
-		log.Println("msg='error-reading-command', error='%v', userBucket='%s'", err, string(userBucket))
+		log.Printf("msg='error-reading-command', error='%v', userBucket='%s'\n", err, string(userBucket))
 		return nil, err
 	}
 
@@ -112,15 +102,10 @@ func Get(userBucket []byte, name string) (*Command, error) {
 func GetAll(userBucket []byte) ([]*Command, error) {
 	cmds := []*Command{}
 
-	err := db.DB.View(func(tx *bolt.Tx) error {
-		ubkt := tx.Bucket(userBucket)
-		if ubkt == nil {
-			return nil
-		}
-
-		bkt := ubkt.Bucket(BucketName)
-		if bkt == nil {
-			return nil
+	err := db.DB.Update(func(tx *bolt.Tx) error {
+		bkt, err := buckets.UserCommands(userBucket, tx)
+		if err != nil {
+			return err
 		}
 
 		bkt.ForEach(func(k, v []byte) error {
@@ -149,14 +134,9 @@ func GetAll(userBucket []byte) ([]*Command, error) {
 // Delete deletes a command from a user's bucket
 func Delete(userBucket []byte, name string) error {
 	err := db.DB.Update(func(tx *bolt.Tx) error {
-		ubkt := tx.Bucket(userBucket)
-		if ubkt == nil {
-			return nil
-		}
-
-		bkt := ubkt.Bucket(BucketName)
-		if bkt == nil {
-			return nil
+		bkt, err := buckets.UserCommands(userBucket, tx)
+		if err != nil {
+			return err
 		}
 
 		return bkt.Delete([]byte(name))

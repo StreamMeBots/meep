@@ -133,6 +133,13 @@ func (a *authConfig) redirectHandler(ctx *gin.Context) {
 		Expires: time.Now().Add(time.Hour * 24 * 30),
 	})
 
+	// save user info
+	if err := u.Save(); err != nil {
+		ctx.JSON(500, map[string]string{
+			"message": "Error saving user information",
+		})
+	}
+
 	// save the user
 	userClients.Add(u.SessId, *u, client)
 

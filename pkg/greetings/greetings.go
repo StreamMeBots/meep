@@ -8,15 +8,13 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/StreamMeBots/meep/pkg/buckets"
 	"github.com/StreamMeBots/meep/pkg/db"
 	"github.com/StreamMeBots/pkg/commands"
+
 	"github.com/boltdb/bolt"
 	"github.com/jinzhu/now"
 )
-
-var TemplateKeyName = []byte("grettingsTemplate")
-
-var GreetingsKeyName = []byte("greetings")
 
 // greeting types
 var (
@@ -30,6 +28,7 @@ type Event struct {
 	Type       string    `json:"type"`
 	Response   string    `json:"response"`
 	Username   string    `json:"username"`
+	PublicID   string    `json:"publicId"`
 	DaysInARow int       `json:"daysInARow"`
 	NewUser    bool      `json:"newUser"`
 	LastVisit  time.Time `json:"lastVisit"`
@@ -38,6 +37,10 @@ type Event struct {
 
 	troll bool
 	tmpl  *Template
+}
+
+func (e *Event) BucketKey() []byte {
+	return []byte(e.PublicID)
 }
 
 // Max length of greeting
@@ -87,86 +90,78 @@ func (t *Template) Validate() error {
 }
 
 // Save saves a Template to a bucket
-func (t *Template) Save(bucket []byte) error {
+func (t *Template) Save(userBucket []byte) error {
 	return db.DB.Update(func(tx *bolt.Tx) error {
-		bkt, err := tx.CreateBucketIfNotExists(bucket)
-		if err != nil {
-			return err
-		}
-
 		b, err := json.Marshal(t)
 		if err != nil {
 			return err
 		}
 
-		return bkt.Put(TemplateKeyName, b)
+		return buckets.UserGreetingTemplates(tx).Put(userBucket, b)
 	})
 }
 
 // Get gets a Template from a bucket
-func Get(bucket []byte) (*Template, error) {
+func Get(userBucket []byte) (*Template, error) {
 	tmpl := &Template{}
 	err := db.DB.Update(func(tx *bolt.Tx) error {
-		bkt, err := tx.CreateBucketIfNotExists(bucket)
-		if err != nil {
-			return err
-		}
-
-		b := bkt.Get(TemplateKeyName)
+		b := buckets.UserGreetingTemplates(tx).Get(userBucket)
 		if b == nil {
 			return nil
 		}
-
 		return json.Unmarshal(b, &tmpl)
 	})
 
 	if err != nil {
+		log.Printf("msg='error-getting-user-templates', error='%v', userBucket='%s'", err, string(userBucket))
 		return nil, err
 	}
 
 	return tmpl, nil
 }
 
-// Join handles if a user should be greeted and what type of greeting they should receive
-func Join(userBucket, botBucket []byte, cmd *commands.Command) Event {
+func NewEvent(cmd *commands.Command) (Event, error) {
 	e := Event{}
-	err := db.DB.Update(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(botBucket)
-		if bkt == nil {
-			return fmt.Errorf("missing bot bucket: %s", string(botBucket))
-		}
-		bkt = bkt.Bucket(GreetingsKeyName)
-		if bkt == nil {
-			return fmt.Errorf("missing grettings bucket: %s", string(GreetingsKeyName))
-		}
+	// populate event with info from command
+	e.PublicID = cmd.Get("publicId")
+	if len(e.PublicID) == 0 {
+		return e, fmt.Errorf("command is missing the 'publicId' field")
+	}
+	e.troll = cmd.Get("role") == "guest"
+	e.Username = cmd.Get("username")
+	if len(e.Username) == 0 {
+		return e, fmt.Errorf("chat command did not have a username")
+	}
 
-		e.troll = cmd.Get("role") == "guest"
-		e.Username = cmd.Get("username")
-		if len(e.Username) == 0 {
-			return fmt.Errorf("chat command did not have a username")
-		}
+	return e, nil
+}
 
-		// get chat user's info
-		b := bkt.Get([]byte(e.Username))
-		if b != nil {
-			if err := json.Unmarshal(b, &e); err != nil {
-				return err
-			}
-		}
+// Join handles if a user should be greeted and what type of greeting they should receive
+func Join(userBucket []byte, cmd *commands.Command) Event {
+	e, err := NewEvent(cmd)
+	if err != nil {
+		log.Printf("msg='error-creating-event-from-command', error='%v'\n command='%+v'", err, cmd)
+		return e
+	}
 
-		// get greetings template for chat room owner
-		userBkt := tx.Bucket(userBucket)
-		if userBkt == nil {
-			// user does not have greetting template yet
-			return nil
-		}
-		b = userBkt.Get(TemplateKeyName)
+	err = db.DB.Update(func(tx *bolt.Tx) error {
+		// get greeting templates
+		b := buckets.UserGreetingTemplates(tx).Get(userBucket)
 		if b == nil {
 			// no message if we don't have any templates
 			return nil
 		}
 		if err := json.Unmarshal(b, &e.tmpl); err != nil {
 			return err
+		}
+
+		// get chat user's info
+		grtBkt := buckets.BotGreetings(tx)
+		b = grtBkt.Get(e.BucketKey())
+		if b != nil {
+			if err := json.Unmarshal(b, &e); err != nil {
+				return err
+			}
 		}
 
 		// clear out old response and type
@@ -185,7 +180,10 @@ func Join(userBucket, botBucket []byte, cmd *commands.Command) Event {
 			return err
 		}
 
-		return bkt.Put([]byte(e.Username), b)
+		if e.Type != answeringMachine {
+			return grtBkt.Put(e.BucketKey(), b)
+		}
+		return nil
 	})
 
 	if err != nil {

@@ -44,6 +44,8 @@ type Client struct {
 	// used add a wait to the Read loop
 	wg      sync.WaitGroup // used to pause reads when connection is lost
 	waiting bool
+
+	logCommands bool // prints read/write commands to the log
 }
 
 // Stats represent some basic stats and state of a Client
@@ -67,14 +69,25 @@ type readCommand struct {
 	err     chan error
 }
 
+// Config is used to configure the tcpclient
+type Config func(*Client)
+
+// LogCommands is a config func used to
+var LogCommands = func(c *Client) {
+	c.logCommands = true
+}
+
 // New is the constructor for Client. This function is required to create a Client.
-func New(chatServerHost string) *Client {
+func New(chatServerHost string, confs ...Config) *Client {
 	c := &Client{
 		read:  make(chan *readCommand, 10),
 		write: make(chan *writeMsg, 10),
 		stop:  make(chan struct{}),
 		host:  chatServerHost,
 		stats: &Stats{},
+	}
+	for _, conf := range confs {
+		conf(c)
 	}
 
 	go c.run()
@@ -162,6 +175,9 @@ func (c *Client) run() error {
 					conn.SetWriteDeadline(time.Now().Add(time.Second * 10))
 				}
 				r := bufio.NewWriter(conn)
+				if c.logCommands {
+					log.Println("tcpclient write:", w.message)
+				}
 				if _, err := r.WriteString(w.message + "\n"); err != nil {
 					w.err <- err
 					continue
@@ -212,6 +228,9 @@ func (c *Client) run() error {
 					if err != nil {
 						r.err <- err
 					} else {
+						if c.logCommands {
+							log.Println("tcpclient read:", cmd.Name, cmd.Args)
+						}
 						r.command <- cmd
 					}
 				}

@@ -26,6 +26,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	if err := bot.JoinRoom(); err != nil {
+		log.Fatal(err)
+	}
 
 	// handle LEAVE on server shutdown
 	done := make(chan os.Signal)

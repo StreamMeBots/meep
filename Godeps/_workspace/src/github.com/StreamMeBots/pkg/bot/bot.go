@@ -36,14 +36,15 @@ type (
 
 // Bot represents a bot user to a stream.me chat server.
 type Bot struct {
-	Room    commands.Room
-	Key     string
-	Secret  string
-	tcp     *tcpclient.Client
-	state   State
-	mx      sync.RWMutex
-	subs    map[string]chan interface{}
-	started time.Time
+	Room        commands.Room
+	Key         string
+	Secret      string
+	tcp         *tcpclient.Client
+	state       State
+	mx          sync.RWMutex
+	subs        map[string]chan interface{}
+	started     time.Time
+	logCommands bool
 }
 
 // RoomId returns the chat room ID that the bot uses to connect to the chat room.
@@ -57,31 +58,51 @@ type Info struct {
 	Started time.Time // When the bot was started
 }
 
-// New is the constructor for Bot. The Bot will connect and join to the bot's configured chat room
-func New(host, key, secret, userPublicId string) (*Bot, error) {
+// Config is used to configure the bot
+type Config func(*Bot)
+
+// LogCommands is used to turn on tcpclient's command logging
+var LogCommands = func(b *Bot) {
+	b.logCommands = true
+}
+
+// New is the constructor for Bot. The Bot will connect to the chat server
+func New(host, key, secret, userPublicId string, confs ...Config) (*Bot, error) {
 	b := &Bot{
 		Room:    commands.NewRoom(userPublicId),
 		Key:     key,
 		Secret:  secret,
-		tcp:     tcpclient.New(host),
 		started: time.Now().UTC(),
 		state:   Disconnected,
 		subs:    make(map[string]chan interface{}),
+	}
+	for _, conf := range confs {
+		conf(b)
+	}
+	if b.logCommands {
+		b.tcp = tcpclient.New(host, tcpclient.LogCommands)
+	} else {
+		b.tcp = tcpclient.New(host)
 	}
 
 	if err := b.isOnline(); err != nil {
 		return nil, err
 	}
 
+	return b, nil
+}
+
+// JoinRoom joins the room
+func (b *Bot) JoinRoom() error {
 	if err := b.Pass(); err != nil {
-		return nil, err
+		return err
 	}
 
 	if err := b.Join(); err != nil {
-		return nil, err
+		return err
 	}
 
-	return b, nil
+	return nil
 }
 
 // GetInfo gets state info about the Bot

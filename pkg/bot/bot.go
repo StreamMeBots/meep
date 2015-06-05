@@ -8,16 +8,13 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/StreamMeBots/meep/pkg/command"
 	"github.com/StreamMeBots/meep/pkg/config"
-	"github.com/StreamMeBots/meep/pkg/db"
+
 	"github.com/StreamMeBots/meep/pkg/greetings"
 	"github.com/StreamMeBots/meep/pkg/stats"
-	"github.com/StreamMeBots/meep/pkg/user"
-
-	"github.com/StreamMeBots/meep/pkg/command"
 	pkgBot "github.com/StreamMeBots/pkg/bot"
 	"github.com/StreamMeBots/pkg/commands"
-	"github.com/boltdb/bolt"
 )
 
 // Errors
@@ -33,7 +30,7 @@ func NewBots() Bots {
 	}
 }
 
-// Bots is used to safely contorl access to all running bots
+// Bots is used to safely control access to all running bots
 type Bots struct {
 	bots map[string]Bot
 	sync.RWMutex
@@ -75,49 +72,29 @@ func (bs *Bots) Info(userPublicId string) pkgBot.Info {
 //	- starts the bots read loop
 //	- authorizes the bot
 func NewBot(userPublicId string, client *http.Client) (Bot, error) {
-	var bt Bot
-	b, err := pkgBot.New(config.Conf.ChatHost, config.Conf.BotKey, config.Conf.BotSecret, userPublicId)
-	if err != nil {
-		return bt, err
-	}
-
-	bt = Bot{
+	bt := Bot{
 		UserPublicId: userPublicId,
-		bot:          b,
 		stop:         make(chan struct{}),
 		client:       client,
 	}
 
-	// auth bot with user's chat room
-	// TODO: blocked by node work
-	/*
-		if err := bt.auth(); err != nil {
-			return bt, err
-		}
-	*/
+	conf := []pkgBot.Config{}
+	if config.Conf.Debug {
+		conf = append(conf, pkgBot.LogCommands)
+	}
 
-	// create buckets for bot
-	err = db.DB.Update(func(tx *bolt.Tx) error {
-		log.Println("create bucket:", string(bt.bucketKey()))
-		bkt, err := tx.CreateBucketIfNotExists(bt.bucketKey())
-		if err != nil {
-			return err
-		}
-
-		_, err = bkt.CreateBucketIfNotExists(greetings.GreetingsKeyName)
-		if err != nil {
-			return err
-		}
-
-		_, err = bkt.CreateBucketIfNotExists(stats.KeyName)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
+	var err error
+	bt.bot, err = pkgBot.New(config.Conf.ChatHost, config.Conf.BotKey, config.Conf.BotSecret, userPublicId, conf...)
 	if err != nil {
-		log.Println("bot: Error creating bot buckets:", err)
+		return bt, err
+	}
+
+	// auth bot with user's chat room
+	if err := bt.auth(); err != nil {
+		return bt, err
+	}
+
+	if err := bt.bot.JoinRoom(); err != nil {
 		return bt, err
 	}
 
@@ -173,7 +150,7 @@ type Bot struct {
 }
 
 func (b *Bot) bucketKey() []byte {
-	return []byte(`bot:` + b.UserPublicId)
+	return []byte(b.UserPublicId)
 }
 
 // read is responsible for reading commands from the chat room then routing the commands to a bot method
@@ -249,7 +226,7 @@ func (b *Bot) say(cmd *commands.Command) {
 	stats.Line(b.bucketKey())
 	m := cmd.Get("message")
 	if len(m) > 2 && m[0] == '!' {
-		if say := command.Say(user.BucketName(b.UserPublicId), cmd); len(say) > 0 {
+		if say := command.Say(b.bucketKey(), cmd); len(say) > 0 {
 			b.bot.Say(say)
 		}
 	}
@@ -260,8 +237,14 @@ func (b *Bot) join(cmd *commands.Command) {
 	if bot := cmd.Get("bot"); bot == "true" {
 		return
 	}
+	// noop for owners
+	/*
+		if bot := cmd.Get("role") == "owner" {
+			return
+		}
+	*/
 
-	e := greetings.Join(user.BucketName(b.UserPublicId), b.bucketKey(), cmd)
+	e := greetings.Join(b.bucketKey(), cmd)
 	if len(e.Response) > 0 {
 		if e.Private {
 			// TODO: meep command only
