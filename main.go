@@ -48,8 +48,12 @@ func main() {
 	// If a file is not found the client/index.html gets served
 	r.Use(static.Serve("/", Assets()))
 
+	//routes.Bots.Startup()
+
 	// start server
 	if err := r.Run(":8888"); err != nil {
 		log.Fatal(err)
 	}
+
+	//routes.Bots.Close()
 }

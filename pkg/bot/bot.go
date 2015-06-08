@@ -8,9 +8,12 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/StreamMeBots/meep/pkg/buckets"
 	"github.com/StreamMeBots/meep/pkg/command"
 	"github.com/StreamMeBots/meep/pkg/config"
+	"github.com/boltdb/bolt"
 
+	"github.com/StreamMeBots/meep/pkg/db"
 	"github.com/StreamMeBots/meep/pkg/greetings"
 	"github.com/StreamMeBots/meep/pkg/stats"
 	pkgBot "github.com/StreamMeBots/pkg/bot"
@@ -101,6 +104,30 @@ func NewBot(userPublicId string, client *http.Client) (Bot, error) {
 	go bt.read()
 
 	return bt, nil
+}
+
+func (bs *Bots) Startup() {
+
+}
+
+// Close stops all bots and saves the user's public id so the bots can be restarted on startup
+func (bs *Bots) Close() {
+	bs.Lock()
+	defer bs.Unlock()
+
+	db.DB.Update(func(tx *bolt.Tx) error {
+		bkt := buckets.RunningBots(tx)
+		for id, b := range bs.bots {
+			close(b.stop)
+			delete(bs.bots, id)
+
+			if err := bkt.Put([]byte(id), []byte(id)); err != nil {
+				log.Println("msg='error-saving-running-bot-id', id='%s' error='%v'", id, err)
+				continue
+			}
+		}
+		return nil
+	})
 }
 
 // Stop stops a user's bot

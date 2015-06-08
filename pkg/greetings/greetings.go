@@ -137,7 +137,7 @@ func NewEvent(cmd *commands.Command) (Event, error) {
 }
 
 // Join handles if a user should be greeted and what type of greeting they should receive
-func Join(userBucket []byte, cmd *commands.Command) Event {
+func Join(botBucket []byte, cmd *commands.Command) Event {
 	e, err := NewEvent(cmd)
 	if err != nil {
 		log.Printf("msg='error-creating-event-from-command', error='%v'\n command='%+v'", err, cmd)
@@ -146,7 +146,7 @@ func Join(userBucket []byte, cmd *commands.Command) Event {
 
 	err = db.DB.Update(func(tx *bolt.Tx) error {
 		// get greeting templates
-		b := buckets.UserGreetingTemplates(tx).Get(userBucket)
+		b := buckets.UserGreetingTemplates(tx).Get(botBucket)
 		if b == nil {
 			// no message if we don't have any templates
 			return nil
@@ -156,7 +156,10 @@ func Join(userBucket []byte, cmd *commands.Command) Event {
 		}
 
 		// get chat user's info
-		grtBkt := buckets.BotGreetings(tx)
+		grtBkt, err := buckets.BotGreetings(tx, botBucket)
+		if err != nil {
+			return err
+		}
 		b = grtBkt.Get(e.BucketKey())
 		if b != nil {
 			if err := json.Unmarshal(b, &e); err != nil {
@@ -175,7 +178,7 @@ func Join(userBucket []byte, cmd *commands.Command) Event {
 		}
 
 		// save greeting stat
-		b, err := json.Marshal(e)
+		b, err = json.Marshal(e)
 		if err != nil {
 			return err
 		}

@@ -29,7 +29,8 @@ type UserClients struct {
 // UserClient contains the user info and the authed client used to interact with stream.me
 type UserClient struct {
 	client *http.Client
-	user   user.User
+	User   user.User
+	Token  string
 }
 
 // Get a user's http client
@@ -45,7 +46,7 @@ func (uc *UserClients) Add(sessid string, u user.User, client *http.Client) {
 	uc.Lock()
 	defer uc.Unlock()
 	uc.clients[sessid] = UserClient{
-		user:   u,
+		User:   u,
 		client: client,
 	}
 }

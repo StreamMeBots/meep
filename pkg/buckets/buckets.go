@@ -12,12 +12,13 @@ import (
 
 // buckets
 var (
-	botGreetings          = []byte(`bot.greetings`)
 	botStats              = []byte(`bot.stats`)
 	userData              = []byte(`user.data`)
 	userGreetingTemplates = []byte(`user.greetings.templates`)
+	runningBots           = []byte(`bots.running`)
 
 	// partial
+	botGreetings = []byte(`bot.greetings:`)
 	userCommands = []byte(`user.commands:`)
 )
 
@@ -28,19 +29,19 @@ type Bucket struct {
 
 func Init() {
 	err := db.DB.Update(func(tx *bolt.Tx) error {
-		if _, err := tx.CreateBucketIfNotExists(botGreetings); err != nil {
-			return err
-		}
 		if _, err := tx.CreateBucketIfNotExists(botStats); err != nil {
-			return err
-		}
-		if _, err := tx.CreateBucketIfNotExists(userCommands); err != nil {
 			return err
 		}
 		if _, err := tx.CreateBucketIfNotExists(userData); err != nil {
 			return err
 		}
 		if _, err := tx.CreateBucketIfNotExists(userGreetingTemplates); err != nil {
+			return err
+		}
+		if _, err := tx.CreateBucketIfNotExists(userGreetingTemplates); err != nil {
+			return err
+		}
+		if _, err := tx.CreateBucketIfNotExists(runningBots); err != nil {
 			return err
 		}
 		return nil
@@ -50,8 +51,12 @@ func Init() {
 	}
 }
 
-func BotGreetings(tx *bolt.Tx) Bucket {
-	return Bucket{tx.Bucket(botGreetings)}
+func BotGreetings(tx *bolt.Tx, botRoomId []byte) (Bucket, error) {
+	bkt, err := tx.CreateBucketIfNotExists(append(botGreetings, botRoomId...))
+	if err != nil {
+		return Bucket{}, err
+	}
+	return Bucket{bkt}, nil
 }
 
 func BotStats(tx *bolt.Tx) Bucket {
@@ -72,4 +77,8 @@ func UserData(tx *bolt.Tx) Bucket {
 
 func UserGreetingTemplates(tx *bolt.Tx) Bucket {
 	return Bucket{tx.Bucket(userGreetingTemplates)}
+}
+
+func RunningBots(tx *bolt.Tx) Bucket {
+	return Bucket{tx.Bucket(runningBots)}
 }
