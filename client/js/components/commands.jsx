@@ -9,11 +9,18 @@ var Command = React.createClass({
 
 	getInitialState: function() {
 		return {
-			name: this.props.name,
+			name: this.props.name || '!',
 			template: this.props.template,
 			dellable: this.props.dellable,
 			deleted: false,
 		};
+	},
+
+	addBang: function(s) {
+		if(s[0] === '!') {
+			return s;
+		}
+		return '!' + s;
 	},
 
 	del: function(name, prompted) {
@@ -58,7 +65,7 @@ var Command = React.createClass({
 		}
 
 		var d = {
-			name: this.value('name'),
+			name: this.addBang(this.value('name')),
 			template: this.value('template')
 		};
 
