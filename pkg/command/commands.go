@@ -6,11 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"strings"
+
 	"text/template"
 
 	"github.com/StreamMeBots/meep/pkg/buckets"
 	"github.com/StreamMeBots/meep/pkg/db"
+
 	"github.com/StreamMeBots/pkg/commands"
 
 	"github.com/boltdb/bolt"
@@ -23,6 +24,7 @@ var ErrCommandNotFound = errors.New("Command not found")
 type Command struct {
 	Name     string `json:"name"`
 	Template string `json:"template"`
+	Timer    int    `json:"timerDuration,omitempty"` // 0 indicates no timer, 1 min intervals
 }
 
 // Validate validates the Command
@@ -98,6 +100,23 @@ func Get(userBucket []byte, name string) (*Command, error) {
 	return cmd, nil
 }
 
+// GetCommandsWithTimers gets all of a user's commands that have a timer
+func GetCommandsWithTimers(userPublicId []byte) ([]*Command, error) {
+	cmds, err := GetAll(userPublicId)
+	if err != nil {
+		return nil, err
+	}
+
+	withTimers := []*Command{}
+	for _, cmd := range cmds {
+		if cmd.Timer > 0 {
+			withTimers = append(withTimers, cmd)
+		}
+	}
+
+	return withTimers, nil
+}
+
 // GetAll gets all of a user's commands
 func GetAll(userBucket []byte) ([]*Command, error) {
 	cmds := []*Command{}
@@ -150,27 +169,17 @@ func Delete(userBucket []byte, name string) error {
 	return nil
 }
 
-// Say checks if the message is a command and if it is provides an answer to the command
-func Say(userBucket []byte, cmd *commands.Command) string {
-	s := strings.TrimSpace(cmd.Get("message"))
-	c, err := Get(userBucket, s)
+// Parse parses the command
+func (c *Command) Parse(cmd *commands.Command) string {
+	t, err := template.New("msg").Parse(c.Template)
 	if err != nil {
-		return ""
-	}
-
-	return parseTemplate(c.Template, cmd.Args)
-}
-
-func parseTemplate(tmpl string, d interface{}) string {
-	t, err := template.New("msg").Parse(tmpl)
-	if err != nil {
-		log.Println("msg='error parsing template', template='%s', error='%v'", tmpl, err)
+		log.Println("msg='error parsing template', template='%s', error='%v'", c.Template, err)
 		return ""
 	}
 
 	buf := &bytes.Buffer{}
-	if err := t.Execute(buf, d); err != nil {
-		log.Println("msg='error executing template', template='%s', data='%+v', error='%v'", tmpl, d, err)
+	if err := t.Execute(buf, cmd.Args); err != nil {
+		log.Println("msg='error executing template', template='%s', data='%+v', error='%v'", c.Template, cmd.Args, err)
 		return ""
 	}
 

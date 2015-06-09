@@ -37,6 +37,7 @@ func NewBots() Bots {
 type Bots struct {
 	bots map[string]Bot
 	sync.RWMutex
+	commandTimers []*command.Command
 }
 
 // Start starts a user's bot
@@ -56,6 +57,17 @@ func (bs *Bots) Start(userPublicId string, client *http.Client) error {
 	defer bs.Unlock()
 	bs.bots[userPublicId] = bt
 	return nil
+}
+
+// TODO(james): finish
+func (b *Bot) startCommandTimers() {
+	/*
+		var err error
+		b.commandTimers, err = command.GetCommandsWithTimers(b.UserPublicId)
+		if err != nil {
+
+		}
+	*/
 }
 
 func (bs *Bots) Info(userPublicId string) pkgBot.Info {
@@ -197,8 +209,6 @@ func (b *Bot) read() {
 			continue
 		}
 
-		b.stat(cmd)
-
 		// route
 		switch cmd.Name {
 		case commands.LJoin:
@@ -245,16 +255,26 @@ func (b *Bot) auth() error {
 	return ErrAuthNon200
 }
 
-func (b *Bot) stat(cmd *commands.Command) {
-
-}
-
 func (b *Bot) say(cmd *commands.Command) {
-	stats.Line(b.bucketKey())
+	isCommand := false
+	defer func() {
+		if !isCommand {
+			stats.Line(b.bucketKey())
+		}
+	}()
+
 	m := cmd.Get("message")
 	if len(m) > 2 && m[0] == '!' {
-		if say := command.Say(b.bucketKey(), cmd); len(say) > 0 {
-			b.bot.Say(say)
+		c, err := command.Get(b.bucketKey(), m[1:])
+		if err != nil {
+			return
+		}
+
+		if stats.Command(b.bucketKey(), []byte(c.Name)) {
+			if msg := c.Parse(cmd); len(msg) > 0 {
+				b.bot.Say(msg)
+				isCommand = true
+			}
 		}
 	}
 }
@@ -276,7 +296,13 @@ func (b *Bot) join(cmd *commands.Command) {
 		if e.Private {
 			// TODO: meep command only
 		} else {
-			b.bot.Say(e.Response)
+			if e.Type == "answeringMachine" {
+				if stats.Command(b.bucketKey(), []byte("answeringMachine")) {
+					b.bot.Say(e.Response)
+				}
+			} else {
+				b.bot.Say(e.Response)
+			}
 		}
 	}
 }
