@@ -142,7 +142,7 @@ var Command = React.createClass({
 				<div className='actions'>
 					{savedString}
 					{delButton}
-					<a className='button' onClick={this.save} title='Save'>Save the !meeping greetings</a>
+					<a className='button' onClick={this.save} title='Save'>Save the !meeping commands</a>
 				</div>
 			</form>
 		)
