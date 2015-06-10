@@ -61,6 +61,11 @@ func Line(userPublicId []byte) {
 		Name: "answeringMachine", // this is a bit of a hack...
 	})
 	for _, cmd := range cmds {
+		// tmp code till frontend adds throttle option
+		if cmd.Throttle == 0 {
+			cmd.Throttle = 2
+		}
+
 		if cmd.Throttle == 0 {
 			continue
 		}
