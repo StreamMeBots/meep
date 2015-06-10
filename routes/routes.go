@@ -82,10 +82,12 @@ func Init(r *gin.Engine) {
 	}
 
 	// admin only routes
-	admin := api.Group("/")
-	{
-		//admin.GET("/users", getUsers)
-	}
+	/*
+		admin := api.Group("/")
+		{
+			//admin.GET("/users", getUsers)
+		}
+	*/
 }
 
 func loggedInUser(ctx *gin.Context) {
