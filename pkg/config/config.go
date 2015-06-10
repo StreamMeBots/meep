@@ -28,6 +28,13 @@ type Config struct {
 	Debug             bool   `json:"debug"`
 }
 
+func (c *Config) Host() string {
+	if c.ServerBehindProxy {
+		return c.ServerHost + ":" + c.ServerPort
+	}
+	return c.ServerHost
+}
+
 func init() {
 	// load config via command line flags
 	flag.StringVar(&Conf.ConfigPath, "config-path", "", "path to a JSON config file")
