@@ -84,7 +84,7 @@ func Init(r *gin.Engine) {
 	// admin only routes
 	admin := api.Group("/")
 	{
-		admin.GET("/users", getUsers)
+		//admin.GET("/users", getUsers)
 	}
 }
 

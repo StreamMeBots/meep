@@ -5,12 +5,15 @@ package buckets
 
 import (
 	"bytes"
+	"errors"
 	"log"
 	"strconv"
 
 	"github.com/StreamMeBots/meep/pkg/db"
 	"github.com/boltdb/bolt"
 )
+
+var ErrIntNotSet = errors.New("int not set")
 
 // buckets
 var (
@@ -142,7 +145,7 @@ func Incr(bkt *bolt.Bucket, key []byte) (int64, error) {
 func GetInt64(bkt *bolt.Bucket, key []byte) (int64, error) {
 	b := bkt.Get(key)
 	if b == nil {
-		return 0, nil
+		return 0, ErrIntNotSet
 	}
 
 	i, err := strconv.ParseInt(string(b), 10, 64)

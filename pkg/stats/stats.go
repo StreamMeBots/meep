@@ -82,7 +82,10 @@ func Command(userPublicId, command []byte) (ok bool) {
 			return err
 		}
 		c, err := buckets.GetInt64(bkt.Bucket, command)
-		if err != nil {
+		if err == buckets.ErrIntNotSet {
+			// edge case
+			c = CommandThrottle + 1
+		} else if err != nil {
 			return err
 		}
 		if c > CommandThrottle {
