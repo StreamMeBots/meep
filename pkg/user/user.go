@@ -5,20 +5,22 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/StreamMeBots/meep/pkg/config"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/StreamMeBots/meep/pkg/buckets"
+	"github.com/StreamMeBots/meep/pkg/config"
+	"github.com/StreamMeBots/meep/pkg/db"
+
+	"github.com/boltdb/bolt"
 )
 
 // Errors
 var (
 	ErrNotFound = errors.New("User not found")
 )
-
-func BucketName(userPublicId string) []byte {
-	return []byte(`user:` + userPublicId)
-}
 
 // Links represents a user's links
 type Links struct {
@@ -33,6 +35,28 @@ type Links struct {
 	} `json:"fallbackAvatar,omitempty"`
 }
 
+func Users() ([]*User, error) {
+	users := []*User{}
+	err := db.DB.View(func(tx *bolt.Tx) error {
+		crs := buckets.UserData(tx).Cursor()
+		for k, v := crs.First(); k != nil; k, v = crs.Next() {
+			u := &User{}
+			if err := json.Unmarshal(v, &u); err != nil {
+				return err
+			}
+			users = append(users, u)
+		}
+
+		return nil
+	})
+	if err != nil {
+		log.Printf("msg='error-getting-users', error='%v'\n", err)
+		return nil, err
+	}
+
+	return users, nil
+}
+
 // User represents the fields that belong to a stream.me user
 type User struct {
 	Name       string `json:"displayName"`
@@ -43,6 +67,27 @@ type User struct {
 	ChatRoomId string `json:"chatRoomId"`
 	SessId     string `json:"sessId"`
 	Links      Links  `json:"_links"`
+}
+
+func (u *User) BucketKey() []byte {
+	return []byte(u.PublicId)
+}
+
+func (u *User) Save() error {
+	err := db.DB.Update(func(tx *bolt.Tx) error {
+		b, err := json.Marshal(u)
+		if err != nil {
+			return err
+		}
+
+		return buckets.UserData(tx).Put(u.BucketKey(), b)
+	})
+	if err != nil {
+		log.Println("msg='error-saving-user-data' error='%v' user='%+v'\n", err, u)
+		return err
+	}
+
+	return nil
 }
 
 // Get gets a user from stream.me using a pre-authorized http client

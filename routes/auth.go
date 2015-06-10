@@ -29,7 +29,8 @@ type UserClients struct {
 // UserClient contains the user info and the authed client used to interact with stream.me
 type UserClient struct {
 	client *http.Client
-	user   user.User
+	User   user.User
+	Token  string
 }
 
 // Get a user's http client
@@ -45,18 +46,12 @@ func (uc *UserClients) Add(sessid string, u user.User, client *http.Client) {
 	uc.Lock()
 	defer uc.Unlock()
 	uc.clients[sessid] = UserClient{
-		user:   u,
+		User:   u,
 		client: client,
 	}
 }
 
 func newAuth(c config.Config) authConfig {
-	domain := c.ServerHost
-
-	if len(c.ServerPort) > 0 {
-		domain += ":" + c.ServerPort
-	}
-
 	conf := oauth2.Config{
 		ClientID:     c.ClientId,
 		ClientSecret: c.ClientSecret,
@@ -65,7 +60,7 @@ func newAuth(c config.Config) authConfig {
 			AuthURL:  c.AuthURL,
 			TokenURL: c.TokenURL,
 		},
-		RedirectURL: "http://" + domain + "/login-redirect",
+		RedirectURL: c.RedirectURL,
 	}
 
 	return authConfig{
@@ -86,7 +81,7 @@ func (a *authConfig) loginHandler(ctx *gin.Context) {
 	// check if we have an authed client
 	if isUserAuthed(ctx) {
 		// go home if we are already logged in
-		ctx.Redirect(302, "/")
+		ctx.Redirect(302, config.Conf.Host())
 		return
 	}
 
@@ -100,7 +95,7 @@ func (a *authConfig) redirectHandler(ctx *gin.Context) {
 	Debugln("Oauth Redirect URL:", ctx.Request.URL.String())
 
 	if errMsg := ctx.Request.FormValue("error"); len(errMsg) > 0 {
-		ctx.Redirect(302, fmt.Sprintf("/?error='%s'", ctx.Request.FormValue("error_description")))
+		ctx.Redirect(302, fmt.Sprintf("%s/?error='%s'", config.Conf.Host(), ctx.Request.FormValue("error_description")))
 		return
 	}
 
@@ -111,7 +106,7 @@ func (a *authConfig) redirectHandler(ctx *gin.Context) {
 	tok, err := a.conf.Exchange(oauth2.NoContext, code)
 	if err != nil {
 		log.Println("exchange error:", err)
-		ctx.Redirect(302, "/?error='Unable to get user auth token from stream.me'")
+		ctx.Redirect(302, fmt.Sprintf("%s/?error='Unable to get user auth token from stream.me'", config.Conf.Host()))
 		return
 	}
 
@@ -121,9 +116,19 @@ func (a *authConfig) redirectHandler(ctx *gin.Context) {
 	// get user from stream.me using the authed client
 	u, err := user.GetByClient(client, ctx.Request.RemoteAddr)
 	if err != nil {
-		ctx.Redirect(302, "/?error='Unable to get user from stream.me'")
+		ctx.Redirect(302, fmt.Sprintf("%s/?error='Unable to get user from stream.me'", config.Conf.Host()))
 		return
 	}
+
+	// save user info
+	if err := u.Save(); err != nil {
+		ctx.JSON(500, map[string]string{
+			"message": "Error saving user information",
+		})
+	}
+
+	// save the user
+	userClients.Add(u.SessId, *u, client)
 
 	// write session cookie
 	http.SetCookie(ctx.Writer, &http.Cookie{
@@ -133,10 +138,7 @@ func (a *authConfig) redirectHandler(ctx *gin.Context) {
 		Expires: time.Now().Add(time.Hour * 24 * 30),
 	})
 
-	// save the user
-	userClients.Add(u.SessId, *u, client)
-
-	ctx.Redirect(302, "/")
+	ctx.Redirect(302, config.Conf.Host())
 }
 
 // isUserAuthed is a helper function to check if the user is already authenticated

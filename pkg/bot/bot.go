@@ -3,19 +3,21 @@ package bot
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"sync"
 
+	"github.com/StreamMeBots/meep/pkg/buckets"
+	"github.com/StreamMeBots/meep/pkg/command"
 	"github.com/StreamMeBots/meep/pkg/config"
+	"github.com/boltdb/bolt"
+
 	"github.com/StreamMeBots/meep/pkg/db"
 	"github.com/StreamMeBots/meep/pkg/greetings"
 	"github.com/StreamMeBots/meep/pkg/stats"
-	"github.com/StreamMeBots/meep/pkg/user"
-
-	"github.com/StreamMeBots/meep/pkg/command"
 	pkgBot "github.com/StreamMeBots/pkg/bot"
 	"github.com/StreamMeBots/pkg/commands"
-	"github.com/boltdb/bolt"
 )
 
 // Errors
@@ -31,10 +33,11 @@ func NewBots() Bots {
 	}
 }
 
-// Bots is used to safely contorl access to all running bots
+// Bots is used to safely control access to all running bots
 type Bots struct {
 	bots map[string]Bot
 	sync.RWMutex
+	commandTimers []*command.Command
 }
 
 // Start starts a user's bot
@@ -45,7 +48,7 @@ func (bs *Bots) Start(userPublicId string, client *http.Client) error {
 	}
 	bs.RUnlock()
 
-	bt, err := NewBot(userPublicId)
+	bt, err := NewBot(userPublicId, client)
 	if err != nil {
 		return err
 	}
@@ -54,6 +57,17 @@ func (bs *Bots) Start(userPublicId string, client *http.Client) error {
 	defer bs.Unlock()
 	bs.bots[userPublicId] = bt
 	return nil
+}
+
+// TODO(james): finish
+func (b *Bot) startCommandTimers() {
+	/*
+		var err error
+		b.commandTimers, err = command.GetCommandsWithTimers(b.UserPublicId)
+		if err != nil {
+
+		}
+	*/
 }
 
 func (bs *Bots) Info(userPublicId string) pkgBot.Info {
@@ -72,52 +86,60 @@ func (bs *Bots) Info(userPublicId string) pkgBot.Info {
 //	- creates a bucket in the bolt db
 //	- starts the bots read loop
 //	- authorizes the bot
-func NewBot(userPublicId string) (Bot, error) {
-	var bt Bot
-	b, err := pkgBot.New(config.Conf.ChatHost, config.Conf.BotKey, config.Conf.BotSecret, userPublicId)
-	if err != nil {
-		return bt, err
+func NewBot(userPublicId string, client *http.Client) (Bot, error) {
+	bt := Bot{
+		UserPublicId: userPublicId,
+		stop:         make(chan struct{}),
+		client:       client,
 	}
 
-	bt = Bot{
-		UserPublicId: userPublicId,
-		bot:          b,
-		stop:         make(chan struct{}),
+	conf := []pkgBot.Config{}
+	if config.Conf.Debug {
+		conf = append(conf, pkgBot.LogCommands)
+	}
+
+	var err error
+	bt.bot, err = pkgBot.New(config.Conf.ChatHost, config.Conf.BotKey, config.Conf.BotSecret, userPublicId, conf...)
+	if err != nil {
+		return bt, err
 	}
 
 	// auth bot with user's chat room
-	/* TODO: blocked by node work
 	if err := bt.auth(); err != nil {
 		return bt, err
 	}
-	*/
 
-	// create buckets for bot
-	err = db.DB.Update(func(tx *bolt.Tx) error {
-		bkt, err := tx.CreateBucketIfNotExists(bt.bucketKey())
-		if err != nil {
-			return err
-		}
-
-		_, err = bkt.CreateBucketIfNotExists(greetings.GreetingsKeyName)
-		if err != nil {
-			return err
-		}
-
-		_, err = bkt.CreateBucketIfNotExists(stats.KeyName)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-	if err != nil {
+	if err := bt.bot.JoinRoom(); err != nil {
 		return bt, err
 	}
 
 	go bt.read()
 
 	return bt, nil
+}
+
+func (bs *Bots) Startup() {
+
+}
+
+// Close stops all bots and saves the user's public id so the bots can be restarted on startup
+func (bs *Bots) Close() {
+	bs.Lock()
+	defer bs.Unlock()
+
+	db.DB.Update(func(tx *bolt.Tx) error {
+		bkt := buckets.RunningBots(tx)
+		for id, b := range bs.bots {
+			close(b.stop)
+			delete(bs.bots, id)
+
+			if err := bkt.Put([]byte(id), []byte(id)); err != nil {
+				log.Println("msg='error-saving-running-bot-id', id='%s' error='%v'", id, err)
+				continue
+			}
+		}
+		return nil
+	})
 }
 
 // Stop stops a user's bot
@@ -167,7 +189,7 @@ type Bot struct {
 }
 
 func (b *Bot) bucketKey() []byte {
-	return []byte(`bot:` + b.UserPublicId)
+	return []byte(b.UserPublicId)
 }
 
 // read is responsible for reading commands from the chat room then routing the commands to a bot method
@@ -187,8 +209,6 @@ func (b *Bot) read() {
 			continue
 		}
 
-		b.stat(cmd)
-
 		// route
 		switch cmd.Name {
 		case commands.LJoin:
@@ -202,17 +222,20 @@ func (b *Bot) read() {
 // auth authorizes the bot with the user's chat room
 func (b *Bot) auth() error {
 	url := fmt.Sprintf(
-		config.Conf.Url+"/api-chat/v1/users/%s/authorized-bots/%s",
-		b.UserPublicId,
+		// /v1/rooms/:roomPublicId/authorized-bots/:botId
+		config.Conf.Url+"/api-chat/v1/rooms/%s/authorized-bots/%s",
 		b.bot.RoomId(),
+		b.bot.Key,
 	)
 	req, err := http.NewRequest("PUT", url, nil)
 	if err != nil {
+		log.Printf("msg='error-creating-request', error='%v'\n", err)
 		return err
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := b.client.Do(req)
 	if err != nil {
+		log.Printf("msg='request-error', error='%v'\n", err)
 		return err
 	}
 	defer resp.Body.Close()
@@ -221,19 +244,37 @@ func (b *Bot) auth() error {
 		return nil
 	}
 
+	bd, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("msg='error-reading-response-body', error='%v'\n", err)
+		return err
+	}
+
+	log.Printf("auth-error-body='%s' statusCode='%v'\n", string(bd), resp.StatusCode)
+
 	return ErrAuthNon200
 }
 
-func (b *Bot) stat(cmd *commands.Command) {
-
-}
-
 func (b *Bot) say(cmd *commands.Command) {
-	stats.Line(b.bucketKey())
+	isCommand := false
+	defer func() {
+		if !isCommand {
+			stats.Line(b.bucketKey())
+		}
+	}()
+
 	m := cmd.Get("message")
 	if len(m) > 2 && m[0] == '!' {
-		if say := command.Say(user.BucketName(b.UserPublicId), cmd); len(say) > 0 {
-			b.bot.Say(say)
+		c, err := command.Get(b.bucketKey(), m)
+		if err != nil {
+			return
+		}
+
+		if stats.Command(b.bucketKey(), []byte(c.Name)) {
+			if msg := c.Parse(cmd); len(msg) > 0 {
+				b.bot.Say(msg)
+				isCommand = true
+			}
 		}
 	}
 }
@@ -243,14 +284,26 @@ func (b *Bot) join(cmd *commands.Command) {
 	if bot := cmd.Get("bot"); bot == "true" {
 		return
 	}
+	// noop for owners
+	/*
+		if bot := cmd.Get("role") == "owner" {
+			return
+		}
+	*/
 
-	e := greetings.Join(user.BucketName(b.UserPublicId), b.bucketKey(), cmd)
+	e := greetings.Join(b.bucketKey(), cmd)
 	if len(e.Response) > 0 {
-		if e.Public {
-			// TODO: add stat
-			b.bot.Say(e.Response)
-		} else {
+		if e.Private {
 			// TODO: meep command only
+		} else {
+			if e.Type == "answeringMachine" {
+				if stats.Command(b.bucketKey(), []byte("answeringMachine")) {
+					fmt.Println("response:", e.Response)
+					b.bot.Say(e.Response)
+				}
+			} else {
+				b.bot.Say(e.Response)
+			}
 		}
 	}
 }

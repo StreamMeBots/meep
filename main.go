@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 
+	"github.com/StreamMeBots/meep/pkg/buckets"
 	"github.com/StreamMeBots/meep/pkg/config"
 	"github.com/StreamMeBots/meep/pkg/db"
 	"github.com/StreamMeBots/meep/routes"
@@ -21,8 +22,15 @@ func main() {
 	// load from config path?
 	config.CheckConfigPath()
 
+	if !config.Conf.Debug {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
 	// Open bolt DB
 	db.Open()
+
+	// Create the buckets we need
+	buckets.Init()
 
 	// routes and server get attached to the gin engine
 	r := gin.Default()
@@ -40,8 +48,12 @@ func main() {
 	// If a file is not found the client/index.html gets served
 	r.Use(static.Serve("/", Assets()))
 
+	//routes.Bots.Startup()
+
 	// start server
 	if err := r.Run(":8888"); err != nil {
 		log.Fatal(err)
 	}
+
+	//routes.Bots.Close()
 }

@@ -5,7 +5,7 @@ dev: dev-assets serve run
 
 run:
 	godep go build -race -a && \
-		./meep -config-path="$(shell pwd)/config.json"
+		./meep -debug -config-path="$(shell pwd)/config.json"
 
 dev-assets: clean deps
 	go-bindata -debug client/serve/...

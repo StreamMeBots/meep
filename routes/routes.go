@@ -7,17 +7,16 @@ import (
 	"net/http"
 
 	"github.com/StreamMeBots/meep/pkg/bot"
-
 	"github.com/StreamMeBots/meep/pkg/command"
 	"github.com/StreamMeBots/meep/pkg/config"
 	"github.com/StreamMeBots/meep/pkg/greetings"
-	"github.com/StreamMeBots/meep/pkg/user"
 	pkgBot "github.com/StreamMeBots/pkg/bot"
+
 	"github.com/gin-gonic/gin"
 )
 
 // our running bouts
-var bots = bot.NewBots()
+var Bots = bot.NewBots()
 
 var Debugf = func(string, ...interface{}) {}
 var Debugln = func(...interface{}) {}
@@ -81,10 +80,18 @@ func Init(r *gin.Engine) {
 		// remove a command from the commands list
 		api.DELETE("/commands/:name", deleteCommand)
 	}
+
+	// admin only routes
+	/*
+		admin := api.Group("/")
+		{
+			//admin.GET("/users", getUsers)
+		}
+	*/
 }
 
 func loggedInUser(ctx *gin.Context) {
-	ctx.JSON(200, getAuthedUser(ctx).user)
+	ctx.JSON(200, getAuthedUser(ctx).User)
 }
 
 func logout(ctx *gin.Context) {
@@ -94,17 +101,17 @@ func logout(ctx *gin.Context) {
 		Path:   "/",
 		MaxAge: -1,
 	})
-	ctx.Redirect(302, "/")
+	ctx.Redirect(302, config.Conf.ServerHost)
 }
 
 func botInfo(ctx *gin.Context) {
-	ctx.JSON(200, bots.Info(getAuthedUser(ctx).user.PublicId))
+	ctx.JSON(200, Bots.Info(getAuthedUser(ctx).User.PublicId))
 }
 
 func logStream(ctx *gin.Context) {
 	u := getAuthedUser(ctx)
 
-	ch, err := bots.LogStream(u.user.PublicId)
+	ch, err := Bots.LogStream(u.User.PublicId)
 	if err != nil {
 		ctx.Stream(func(w io.Writer) bool {
 			log.Println("botError", err.Error())
@@ -113,7 +120,7 @@ func logStream(ctx *gin.Context) {
 		})
 		return
 	}
-	defer bots.CloseLogStream(u.user.PublicId)
+	defer Bots.CloseLogStream(u.User.PublicId)
 
 	ctx.Stream(func(w io.Writer) bool {
 		e, ok := <-ch
@@ -139,7 +146,7 @@ func logStream(ctx *gin.Context) {
 func startBot(ctx *gin.Context) {
 	u := getAuthedUser(ctx)
 
-	if err := bots.Start(u.user.PublicId, u.client); err != nil {
+	if err := Bots.Start(u.User.PublicId, u.client); err != nil {
 		ctx.JSON(500, map[string]string{
 			"message": err.Error(),
 		})
@@ -154,7 +161,7 @@ func startBot(ctx *gin.Context) {
 func stopBot(ctx *gin.Context) {
 	u := getAuthedUser(ctx)
 
-	bots.Stop(u.user.PublicId)
+	Bots.Stop(u.User.PublicId)
 
 	ctx.JSON(200, map[string]string{
 		"message": "Bot has been stopped",
@@ -164,7 +171,7 @@ func stopBot(ctx *gin.Context) {
 func getGreetings(ctx *gin.Context) {
 	u := getAuthedUser(ctx)
 
-	tmpl, err := greetings.Get(user.BucketName(u.user.PublicId))
+	tmpl, err := greetings.Get(u.User.BucketKey())
 	if err != nil {
 		log.Printf("msg='json-decode-error', error='%v'\n", err)
 		ctx.JSON(500, map[string]string{
@@ -195,8 +202,8 @@ func saveGreetings(ctx *gin.Context) {
 		return
 	}
 
-	if err := tmpl.Save(user.BucketName(u.user.PublicId)); err != nil {
-		log.Printf("msg='error-saving-greeting', userPublicId='%s', error='%v'\n", u.user.PublicId, err)
+	if err := tmpl.Save(u.User.BucketKey()); err != nil {
+		log.Printf("msg='error-saving-greeting', userPublicId='%s', error='%v'\n", u.User.PublicId, err)
 		ctx.JSON(500, map[string]string{
 			"message": "Internal server error",
 		})
@@ -224,7 +231,7 @@ func createCommand(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.Save(user.BucketName(u.user.PublicId)); err != nil {
+	if err := c.Save(u.User.BucketKey()); err != nil {
 		ctx.JSON(500, map[string]string{
 			"message": "Internal server error",
 		})
@@ -237,7 +244,7 @@ func createCommand(ctx *gin.Context) {
 func getCommands(ctx *gin.Context) {
 	u := getAuthedUser(ctx)
 
-	cmds, err := command.GetAll(user.BucketName(u.user.PublicId))
+	cmds, err := command.GetAll(u.User.BucketKey())
 	if err != nil {
 		ctx.JSON(500, map[string]string{
 			"message": "Internal server error",
@@ -252,7 +259,7 @@ func getCommand(ctx *gin.Context) {
 	//u := getAuthedUser(ctx)
 	u := getAuthedUser(ctx)
 
-	cmd, err := command.Get(user.BucketName(u.user.PublicId), ctx.ParamValue("name"))
+	cmd, err := command.Get(u.User.BucketKey(), ctx.ParamValue("name"))
 	if err != nil {
 		ctx.JSON(500, map[string]string{
 			"message": "Internal server error",
@@ -266,7 +273,7 @@ func getCommand(ctx *gin.Context) {
 func deleteCommand(ctx *gin.Context) {
 	u := getAuthedUser(ctx)
 
-	err := command.Delete(user.BucketName(u.user.PublicId), ctx.ParamValue("name"))
+	err := command.Delete(u.User.BucketKey(), ctx.ParamValue("name"))
 	if err != nil {
 		ctx.JSON(500, map[string]string{
 			"message": "Internal server error",

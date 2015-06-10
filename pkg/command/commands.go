@@ -3,23 +3,28 @@ package command
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
-	"strings"
+
 	"text/template"
 
+	"github.com/StreamMeBots/meep/pkg/buckets"
 	"github.com/StreamMeBots/meep/pkg/db"
+
 	"github.com/StreamMeBots/pkg/commands"
+
 	"github.com/boltdb/bolt"
 )
 
-// BucketName bucket name in bolt
-var BucketName = []byte(`commands`)
+// Errors
+var ErrCommandNotFound = errors.New("Command not found")
 
 // Command represents a command response template.
 type Command struct {
 	Name     string `json:"name"`
 	Template string `json:"template"`
+	Timer    int    `json:"timerDuration,omitempty"` // 0 indicates no timer, 1 min intervals
 }
 
 // Validate validates the Command
@@ -41,17 +46,12 @@ func (c *Command) Validate() error {
 // Save saves the command
 func (c *Command) Save(userBucket []byte) error {
 	err := db.DB.Update(func(tx *bolt.Tx) error {
-		ubkt, err := tx.CreateBucketIfNotExists(userBucket)
-		if err != nil {
-			return err
-		}
-
-		bkt, err := ubkt.CreateBucketIfNotExists(BucketName)
-		if err != nil {
-			return err
-		}
-
 		b, err := json.Marshal(c)
+		if err != nil {
+			return err
+		}
+
+		bkt, err := buckets.UserCommands(userBucket, tx)
 		if err != nil {
 			return err
 		}
@@ -70,15 +70,10 @@ func (c *Command) Save(userBucket []byte) error {
 // Get gets a single command
 func Get(userBucket []byte, name string) (*Command, error) {
 	var cmd *Command
-	err := db.DB.View(func(tx *bolt.Tx) error {
-		ubkt := tx.Bucket(userBucket)
-		if ubkt == nil {
-			return nil
-		}
-
-		bkt := ubkt.Bucket(BucketName)
-		if bkt == nil {
-			return nil
+	err := db.DB.Update(func(tx *bolt.Tx) error {
+		bkt, err := buckets.UserCommands(userBucket, tx)
+		if err != nil {
+			return err
 		}
 
 		b := bkt.Get([]byte(name))
@@ -94,26 +89,42 @@ func Get(userBucket []byte, name string) (*Command, error) {
 	})
 
 	if err != nil {
-		log.Println("msg='error-reading-command', error='%v', userBucket='%s'", err, string(userBucket))
+		log.Printf("msg='error-reading-command', error='%v', userBucket='%s'\n", err, string(userBucket))
 		return nil, err
 	}
 
+	if cmd == nil {
+		return nil, ErrCommandNotFound
+	}
+
 	return cmd, nil
+}
+
+// GetCommandsWithTimers gets all of a user's commands that have a timer
+func GetCommandsWithTimers(userPublicId []byte) ([]*Command, error) {
+	cmds, err := GetAll(userPublicId)
+	if err != nil {
+		return nil, err
+	}
+
+	withTimers := []*Command{}
+	for _, cmd := range cmds {
+		if cmd.Timer > 0 {
+			withTimers = append(withTimers, cmd)
+		}
+	}
+
+	return withTimers, nil
 }
 
 // GetAll gets all of a user's commands
 func GetAll(userBucket []byte) ([]*Command, error) {
 	cmds := []*Command{}
 
-	err := db.DB.View(func(tx *bolt.Tx) error {
-		ubkt := tx.Bucket(userBucket)
-		if ubkt == nil {
-			return nil
-		}
-
-		bkt := ubkt.Bucket(BucketName)
-		if bkt == nil {
-			return nil
+	err := db.DB.Update(func(tx *bolt.Tx) error {
+		bkt, err := buckets.UserCommands(userBucket, tx)
+		if err != nil {
+			return err
 		}
 
 		bkt.ForEach(func(k, v []byte) error {
@@ -142,14 +153,9 @@ func GetAll(userBucket []byte) ([]*Command, error) {
 // Delete deletes a command from a user's bucket
 func Delete(userBucket []byte, name string) error {
 	err := db.DB.Update(func(tx *bolt.Tx) error {
-		ubkt := tx.Bucket(userBucket)
-		if ubkt == nil {
-			return nil
-		}
-
-		bkt := ubkt.Bucket(BucketName)
-		if bkt == nil {
-			return nil
+		bkt, err := buckets.UserCommands(userBucket, tx)
+		if err != nil {
+			return err
 		}
 
 		return bkt.Delete([]byte(name))
@@ -163,27 +169,17 @@ func Delete(userBucket []byte, name string) error {
 	return nil
 }
 
-// Say checks if the message is a command and if it is provides an answer to the command
-func Say(userBucket []byte, cmd *commands.Command) string {
-	s := strings.TrimSpace(cmd.Get("message")[1:])
-	c, err := Get(userBucket, s)
+// Parse parses the command
+func (c *Command) Parse(cmd *commands.Command) string {
+	t, err := template.New("msg").Parse(c.Template)
 	if err != nil {
-		return ""
-	}
-
-	return parseTemplate(c.Template, cmd.Args)
-}
-
-func parseTemplate(tmpl string, d interface{}) string {
-	t, err := template.New("msg").Parse(tmpl)
-	if err != nil {
-		log.Println("msg='error parsing template', template='%s', error='%v'", tmpl, err)
+		log.Println("msg='error parsing template', template='%s', error='%v'", c.Template, err)
 		return ""
 	}
 
 	buf := &bytes.Buffer{}
-	if err := t.Execute(buf, d); err != nil {
-		log.Println("msg='error executing template', template='%s', data='%+v', error='%v'", tmpl, d, err)
+	if err := t.Execute(buf, cmd.Args); err != nil {
+		log.Println("msg='error executing template', template='%s', data='%+v', error='%v'", c.Template, cmd.Args, err)
 		return ""
 	}
 
