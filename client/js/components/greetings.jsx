@@ -147,12 +147,10 @@ module.exports = React.createClass({
 					<label>Consecutive User Greeting</label>
 					<textarea maxLength='250' name='consecutiveUser' placeholder='Consecutive user greeting' defaultValue={this.state.consecutiveUser}></textarea>
 				</div>
-				/*
 				<div className='field'>
 					<label>Answering Machine {answeringMachineOnOff}</label>
 					<textarea maxLength='250' name='answeringMachine' placeholder='Answering machine greeting' defaultValue={this.state.answeringMachine}></textarea>
 				</div>
-				*/
 				<div className='field'>
 					<label>
 						<a onClick={this.toggleGreetTrolls} className={trollClass} title={trollButtonText}>
