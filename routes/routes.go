@@ -99,7 +99,7 @@ func logout(ctx *gin.Context) {
 		Path:   "/",
 		MaxAge: -1,
 	})
-	ctx.Redirect(302, "/")
+	ctx.Redirect(302, config.Conf.ServerHost)
 }
 
 func botInfo(ctx *gin.Context) {
