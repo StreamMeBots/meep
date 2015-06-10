@@ -29,7 +29,7 @@ type Config struct {
 }
 
 func (c *Config) Host() string {
-	if c.ServerBehindProxy {
+	if !c.ServerBehindProxy {
 		return c.ServerHost + ":" + c.ServerPort
 	}
 	return c.ServerHost
