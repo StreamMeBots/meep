@@ -21,7 +21,7 @@ var (
 	newUser          = "newUser"
 	returningUser    = "returningUser"
 	consecutiveUser  = "consecutiveUser"
-	answeringMachine = "answeringMachine"
+	AnsweringMachine = "answeringMachine"
 )
 
 type Event struct {
@@ -183,7 +183,7 @@ func Join(botBucket []byte, cmd *commands.Command) Event {
 			return err
 		}
 
-		if e.Type != answeringMachine {
+		if e.Type != AnsweringMachine {
 			return grtBkt.Put(e.BucketKey(), b)
 		}
 		return nil
@@ -214,7 +214,7 @@ func (e *Event) populate() {
 	}
 
 	if e.tmpl.AnsweringMachineOn {
-		e.Type = answeringMachine
+		e.Type = AnsweringMachine
 		e.parseTemplate(e.tmpl.AnsweringMachine)
 		return
 	}

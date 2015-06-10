@@ -270,7 +270,7 @@ func (b *Bot) say(cmd *commands.Command) {
 			return
 		}
 
-		if stats.Command(b.bucketKey(), []byte(c.Name)) {
+		if stats.Command(b.bucketKey(), c) {
 			if msg := c.Parse(cmd); len(msg) > 0 {
 				b.bot.Say(msg)
 				isCommand = true
@@ -297,7 +297,7 @@ func (b *Bot) join(cmd *commands.Command) {
 			// TODO: meep command only
 		} else {
 			if e.Type == "answeringMachine" {
-				if stats.Command(b.bucketKey(), []byte("answeringMachine")) {
+				if stats.Command(b.bucketKey(), &command.Command{Name: "answeringMachine"}) {
 					fmt.Println("response:", e.Response)
 					b.bot.Say(e.Response)
 				}

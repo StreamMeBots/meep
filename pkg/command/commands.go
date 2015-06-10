@@ -6,12 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"log"
-
 	"text/template"
 
 	"github.com/StreamMeBots/meep/pkg/buckets"
 	"github.com/StreamMeBots/meep/pkg/db"
-
 	"github.com/StreamMeBots/pkg/commands"
 
 	"github.com/boltdb/bolt"
@@ -25,6 +23,7 @@ type Command struct {
 	Name     string `json:"name"`
 	Template string `json:"template"`
 	Timer    int    `json:"timerDuration,omitempty"` // 0 indicates no timer, 1 min intervals
+	Throttle int64  `json:"throttle,omitempty"`      // 0 means no throttle
 }
 
 // Validate validates the Command

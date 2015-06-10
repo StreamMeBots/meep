@@ -38,11 +38,13 @@ func main() {
 	// setup routes
 	routes.Init(r)
 
-	// no cache please
-	r.Use(func(ctx *gin.Context) {
-		ctx.Request.Header.Del("If-Modified-Since")
-		ctx.Writer.Header().Add("Cache-Control", "no-cache")
-	})
+	if config.Conf.Debug {
+		// no cache please
+		r.Use(func(ctx *gin.Context) {
+			ctx.Request.Header.Del("If-Modified-Since")
+			ctx.Writer.Header().Add("Cache-Control", "no-cache")
+		})
+	}
 
 	// All undefined routes will get served from the client directory.
 	// If a file is not found the client/index.html gets served

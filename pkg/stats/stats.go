@@ -61,6 +61,9 @@ func Line(userPublicId []byte) {
 		Name: "answeringMachine", // this is a bit of a hack...
 	})
 	for _, cmd := range cmds {
+		if cmd.Throttle == 0 {
+			continue
+		}
 		db.DB.Update(func(tx *bolt.Tx) error {
 			bkt, err := buckets.LastCommand(tx, userPublicId)
 			if err != nil {
@@ -75,36 +78,43 @@ func Line(userPublicId []byte) {
 }
 
 // Command checks if a command should be written and writes command stats
-func Command(userPublicId, command []byte) (ok bool) {
-	db.DB.Update(func(tx *bolt.Tx) error {
-		bkt, err := buckets.LastCommand(tx, userPublicId)
-		if err != nil {
-			return err
-		}
-		c, err := buckets.GetInt64(bkt.Bucket, command)
-		if err == buckets.ErrIntNotSet {
-			// edge case
-			c = CommandThrottle + 1
-		} else if err != nil {
-			return err
-		}
-		if c > CommandThrottle {
-			ok = true
-			// reset
-			return buckets.SetInt64(bkt.Bucket, command, 0)
-		}
-		return nil
-	})
+func Command(userPublicId []byte, cmd *command.Command) (ok bool) {
+	// tmp code till frontend adds throttle option
+	if cmd.Throttle == 0 {
+		cmd.Throttle = 2
+	}
 
-	if !ok {
-		return false
+	if cmd.Throttle > 0 {
+		db.DB.Update(func(tx *bolt.Tx) error {
+			bkt, err := buckets.LastCommand(tx, userPublicId)
+			if err != nil {
+				return err
+			}
+			c, err := buckets.GetInt64(bkt.Bucket, []byte(cmd.Name))
+			if err == buckets.ErrIntNotSet {
+				// edge case
+				c = cmd.Throttle + 1
+			} else if err != nil {
+				return err
+			}
+			if c > cmd.Throttle {
+				ok = true
+				// reset
+				return buckets.SetInt64(bkt.Bucket, []byte(cmd.Name), 0)
+			}
+			return nil
+		})
+
+		if !ok {
+			return false
+		}
 	}
 
 	db.DB.Update(func(tx *bolt.Tx) error {
 		day := []byte(now.BeginningOfDay().Format(time.RFC3339))
-		bkt, err := buckets.CommandsPerDay(tx, userPublicId, command)
+		bkt, err := buckets.CommandsPerDay(tx, userPublicId, []byte(cmd.Name))
 		if err != nil {
-			log.Printf("msg='error-getting-commands-per-day-bucket', error='%v', userPublicId='%v', command='%s'\n", err, userPublicId, string(command))
+			log.Printf("msg='error-getting-commands-per-day-bucket', error='%v', userPublicId='%v', command='%s'\n", err, userPublicId, cmd.Name)
 			return err
 		}
 		_, err = buckets.Incr(bkt.Bucket, day)
@@ -112,9 +122,9 @@ func Command(userPublicId, command []byte) (ok bool) {
 	})
 	db.DB.Update(func(tx *bolt.Tx) error {
 		hour := []byte(now.BeginningOfHour().Format(time.RFC3339))
-		bkt, err := buckets.CommandsPerHour(tx, userPublicId, command)
+		bkt, err := buckets.CommandsPerHour(tx, userPublicId, []byte(cmd.Name))
 		if err != nil {
-			log.Printf("msg='error-getting-commands-per-hour-bucket', error='%v', userPublicId='%v', command='%s'\n", err, userPublicId, string(command))
+			log.Printf("msg='error-getting-commands-per-hour-bucket', error='%v', userPublicId='%v', command='%s'\n", err, userPublicId, cmd.Name)
 			return err
 		}
 		_, err = buckets.Incr(bkt.Bucket, hour)
