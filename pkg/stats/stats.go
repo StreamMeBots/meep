@@ -5,6 +5,7 @@
 package stats
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -28,41 +29,54 @@ func x(tx *bolt.Tx, publicId []byte) error {
 func Line(userPublicId []byte) {
 	db.DB.Update(func(tx *bolt.Tx) error {
 		day := []byte(now.BeginningOfDay().Format(time.RFC3339))
-		hour := []byte(now.BeginningOfHour().Format(time.RFC3339))
-
-		if bkt, err := buckets.LinesPerDay(tx, userPublicId); err != nil {
-			log.Printf("msg='error-getting-lines-per-day-bucket', error='%v', userPublicId='%v'\n", err, userPublicId)
-		} else {
-			buckets.Incr(bkt.Bucket, day)
+		bkt, err := buckets.LinesPerDay(tx, userPublicId)
+		if err != nil {
+			return fmt.Errorf("msg='error-getting-lines-per-day-bucket', error='%v', userPublicId='%v'\n", err, userPublicId)
 		}
-
-		if bkt, err := buckets.LinesPerHour(tx, userPublicId); err != nil {
-			log.Printf("msg='error-getting-lines-per-hour-bucket', error='%v', userPublicId='%v'\n", err, userPublicId)
-		} else {
-			buckets.Incr(bkt.Bucket, hour)
-		}
-
-		if cmds, err := command.GetAll(userPublicId); err != nil {
-			log.Printf("msg='error-getting-commands', error='%v' userPublicId='%s'\n", err, userPublicId)
-		} else {
-			cmds = append(cmds, &command.Command{
-				Name: "answeringMachine", // this is a bit of a hack...
-			})
-			for _, cmd := range cmds {
-				if bkt, err := buckets.LastCommand(tx, userPublicId); err != nil {
-					log.Printf("msg='error-getting-last-commands-bucket', error='%v', userPublicId='%v'\n", err, userPublicId)
-				} else {
-					buckets.Incr(bkt.Bucket, []byte(cmd.Name))
-				}
-			}
+		if _, err := buckets.Incr(bkt.Bucket, day); err != nil {
+			return err
 		}
 		return nil
 	})
+
+	db.DB.Update(func(tx *bolt.Tx) error {
+		hour := []byte(now.BeginningOfHour().Format(time.RFC3339))
+		bkt, err := buckets.LinesPerHour(tx, userPublicId)
+		if err != nil {
+			return fmt.Errorf("msg='error-getting-lines-per-hour-bucket', error='%v', userPublicId='%v'\n", err, userPublicId)
+		}
+		if _, err := buckets.Incr(bkt.Bucket, hour); err != nil {
+			return err
+		}
+		return nil
+	})
+
+	cmds, err := command.GetAll(userPublicId)
+	if err != nil {
+		log.Printf("msg='error-getting-commands', error='%v' userPublicId='%s'\n", err, userPublicId)
+		return
+	}
+
+	cmds = append(cmds, &command.Command{
+		Name: "answeringMachine", // this is a bit of a hack...
+	})
+	for _, cmd := range cmds {
+		db.DB.Update(func(tx *bolt.Tx) error {
+			bkt, err := buckets.LastCommand(tx, userPublicId)
+			if err != nil {
+				return fmt.Errorf("msg='error-getting-last-commands-bucket', error='%v', userPublicId='%v'\n", err, userPublicId)
+			}
+			if _, err := buckets.Incr(bkt.Bucket, []byte(cmd.Name)); err != nil {
+				return err
+			}
+			return nil
+		})
+	}
 }
 
 // Command checks if a command should be written and writes command stats
 func Command(userPublicId, command []byte) (ok bool) {
-	err := db.DB.Update(func(tx *bolt.Tx) error {
+	db.DB.Update(func(tx *bolt.Tx) error {
 		bkt, err := buckets.LastCommand(tx, userPublicId)
 		if err != nil {
 			return err
@@ -71,31 +85,38 @@ func Command(userPublicId, command []byte) (ok bool) {
 		if err != nil {
 			return err
 		}
-		if c < CommandThrottle {
-			return nil
+		if c > CommandThrottle {
+			ok = true
+			// reset
+			return buckets.SetInt64(bkt.Bucket, command, 0)
 		}
-
-		day := []byte(now.BeginningOfDay().Format(time.RFC3339))
-		hour := []byte(now.BeginningOfHour().Format(time.RFC3339))
-
-		if bkt, err := buckets.CommandsPerDay(tx, userPublicId, command); err != nil {
-			log.Printf("msg='error-getting-commands-per-day-bucket', error='%v', userPublicId='%v', command='%s'\n", err, userPublicId, string(command))
-		} else {
-			buckets.Incr(bkt.Bucket, day)
-		}
-
-		if bkt, err := buckets.CommandsPerHour(tx, userPublicId, command); err != nil {
-			log.Printf("msg='error-getting-commands-per-hour-bucket', error='%v', userPublicId='%v', command='%s'\n", err, userPublicId, string(command))
-		} else {
-			buckets.Incr(bkt.Bucket, hour)
-		}
-
-		// reset
-		return buckets.SetInt64(bkt.Bucket, command, 0)
+		return nil
 	})
-	if err != nil {
-		log.Println("msg='stat-command-error', error='%v', command='%s'\n", err, string(command))
+
+	if !ok {
+		return false
 	}
 
-	return ok
+	db.DB.Update(func(tx *bolt.Tx) error {
+		day := []byte(now.BeginningOfDay().Format(time.RFC3339))
+		bkt, err := buckets.CommandsPerDay(tx, userPublicId, command)
+		if err != nil {
+			log.Printf("msg='error-getting-commands-per-day-bucket', error='%v', userPublicId='%v', command='%s'\n", err, userPublicId, string(command))
+			return err
+		}
+		_, err = buckets.Incr(bkt.Bucket, day)
+		return err
+	})
+	db.DB.Update(func(tx *bolt.Tx) error {
+		hour := []byte(now.BeginningOfHour().Format(time.RFC3339))
+		bkt, err := buckets.CommandsPerHour(tx, userPublicId, command)
+		if err != nil {
+			log.Printf("msg='error-getting-commands-per-hour-bucket', error='%v', userPublicId='%v', command='%s'\n", err, userPublicId, string(command))
+			return err
+		}
+		_, err = buckets.Incr(bkt.Bucket, hour)
+		return err
+	})
+
+	return true
 }

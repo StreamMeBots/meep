@@ -265,7 +265,7 @@ func (b *Bot) say(cmd *commands.Command) {
 
 	m := cmd.Get("message")
 	if len(m) > 2 && m[0] == '!' {
-		c, err := command.Get(b.bucketKey(), m[1:])
+		c, err := command.Get(b.bucketKey(), m)
 		if err != nil {
 			return
 		}
@@ -298,6 +298,7 @@ func (b *Bot) join(cmd *commands.Command) {
 		} else {
 			if e.Type == "answeringMachine" {
 				if stats.Command(b.bucketKey(), []byte("answeringMachine")) {
+					fmt.Println("response:", e.Response)
 					b.bot.Say(e.Response)
 				}
 			} else {

@@ -52,12 +52,6 @@ func (uc *UserClients) Add(sessid string, u user.User, client *http.Client) {
 }
 
 func newAuth(c config.Config) authConfig {
-	domain := c.ServerHost
-
-	if len(c.ServerPort) > 0 {
-		domain += ":" + c.ServerPort
-	}
-
 	conf := oauth2.Config{
 		ClientID:     c.ClientId,
 		ClientSecret: c.ClientSecret,
@@ -126,14 +120,6 @@ func (a *authConfig) redirectHandler(ctx *gin.Context) {
 		return
 	}
 
-	// write session cookie
-	http.SetCookie(ctx.Writer, &http.Cookie{
-		Name:    "sessid",
-		Value:   u.SessId,
-		Path:    "/",
-		Expires: time.Now().Add(time.Hour * 24 * 30),
-	})
-
 	// save user info
 	if err := u.Save(); err != nil {
 		ctx.JSON(500, map[string]string{
@@ -143,6 +129,14 @@ func (a *authConfig) redirectHandler(ctx *gin.Context) {
 
 	// save the user
 	userClients.Add(u.SessId, *u, client)
+
+	// write session cookie
+	http.SetCookie(ctx.Writer, &http.Cookie{
+		Name:    "sessid",
+		Value:   u.SessId,
+		Path:    "/",
+		Expires: time.Now().Add(time.Hour * 24 * 30),
+	})
 
 	ctx.Redirect(302, config.Conf.Host())
 }

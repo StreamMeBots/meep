@@ -14,7 +14,6 @@ import (
 
 // buckets
 var (
-	botStats              = []byte(`bot.stats`)
 	userData              = []byte(`user.data`)
 	userGreetingTemplates = []byte(`user.greetings.templates`)
 	runningBots           = []byte(`bots.running`)
@@ -37,13 +36,7 @@ type Bucket struct {
 
 func Init() {
 	err := db.DB.Update(func(tx *bolt.Tx) error {
-		if _, err := tx.CreateBucketIfNotExists(botStats); err != nil {
-			return err
-		}
 		if _, err := tx.CreateBucketIfNotExists(userData); err != nil {
-			return err
-		}
-		if _, err := tx.CreateBucketIfNotExists(userGreetingTemplates); err != nil {
 			return err
 		}
 		if _, err := tx.CreateBucketIfNotExists(userGreetingTemplates); err != nil {
@@ -89,10 +82,6 @@ func BotGreetings(tx *bolt.Tx, botUserPublicId []byte) (Bucket, error) {
 
 func UserCommands(userBucket []byte, tx *bolt.Tx) (Bucket, error) {
 	return createBucket(tx, createKey(userCommands, userBucket))
-}
-
-func BotStats(tx *bolt.Tx) Bucket {
-	return Bucket{tx.Bucket(botStats)}
 }
 
 func UserData(tx *bolt.Tx) Bucket {
