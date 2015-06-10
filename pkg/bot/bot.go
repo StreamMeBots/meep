@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/StreamMeBots/meep/pkg/buckets"
 	"github.com/StreamMeBots/meep/pkg/command"
@@ -298,10 +299,12 @@ func (b *Bot) join(cmd *commands.Command) {
 		} else {
 			if e.Type == "answeringMachine" {
 				if stats.Command(b.bucketKey(), &command.Command{Name: "answeringMachine"}) {
-					fmt.Println("response:", e.Response)
+					// FIXIME:
+					time.Sleep(time.Second)
 					b.bot.Say(e.Response)
 				}
 			} else {
+				time.Sleep(time.Second)
 				b.bot.Say(e.Response)
 			}
 		}
