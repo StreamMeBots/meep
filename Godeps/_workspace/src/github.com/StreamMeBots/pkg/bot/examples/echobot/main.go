@@ -26,7 +26,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err := bot.JoinRoom(); err != nil {
+	if err := b.JoinRoom(); err != nil {
 		log.Fatal(err)
 	}
 

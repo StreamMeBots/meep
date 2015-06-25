@@ -227,6 +227,11 @@ func (b *Bot) UnMute(userPublicId string) error {
 	return b.write(b.Room.UnMute(userPublicId))
 }
 
+// Erase a message
+func (b *Bot) Erase(messageId string) error {
+	return b.write(b.Room.Erase(messageId))
+}
+
 // Leave sends the Leave command and disconnects the bot from the chat server
 func (b *Bot) Leave() {
 	b.write(b.Room.Leave())

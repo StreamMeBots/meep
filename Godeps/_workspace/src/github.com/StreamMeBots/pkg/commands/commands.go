@@ -102,6 +102,10 @@ func (r Room) Leave() string {
 	return fmt.Sprintf("LEAVE %s", r)
 }
 
+func (r Room) Erase(messageId string) string {
+	return fmt.Sprintf("ERASE %s", messageId)
+}
+
 // ChangeRole formats the command a user with a role of moderator/owner/admin can send to change a user's role
 func (r Room) ChangeRole(userPublicId string, role string) string {
 	return fmt.Sprintf("CHANGEROLE %s %s %s", userPublicId, r, role)
